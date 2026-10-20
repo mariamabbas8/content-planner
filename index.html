@@ -45,6 +45,10 @@ details{border-bottom:1px solid var(--bd);padding:6px 0}summary{cursor:pointer}
 <div class="card"><b>Bulk paste</b> <span class="mu">one keyword per line; intent is auto-suggested (EN + AR), editable in the table</span>
 <textarea id="bk" rows="3" style="width:100%;margin:6px 0" dir="auto"></textarea>
 <div class="row"><select id="bl"><option>EN</option><option>AR</option></select><button id="bb">Add keywords</button></div></div>
+<div class="card"><b>Get ideas for this client</b> <span class="mu">free: the tool writes the request, claude.ai writes the ideas</span>
+<div class="row" style="margin:6px 0">How many <input type="number" id="gn" value="20" min="5" max="60"> Language <select id="gnl"><option value="AR">Arabic</option><option value="EN">English</option><option value="BOTH">Both</option></select><button class="p" id="gp">Copy ideas request</button><a href="https://claude.ai/new" target="_blank" rel="noopener"><button type="button">Open claude.ai</button></a></div>
+<textarea id="gpo" rows="3" style="width:100%" readonly hidden></textarea>
+<div class="mu">1) Click Copy ideas request. 2) Paste it into claude.ai and send. 3) Copy Claude's reply, paste it in the Bulk paste box below, and click "Import pasted rows".</div></div>
 <div class="card"><b>Import</b><div class="row" style="margin-top:6px"><button id="bp">Import pasted rows above (Sheets/CSV)</button><label>CSV file <input type="file" id="fc" accept=".csv,.tsv,.txt"></label><label>GSC queries export <input type="file" id="fg" accept=".csv,.tsv,.txt"></label></div>
 <div class="mu">CSV columns (header row optional): topic, keyword, intent, format, cluster, language, volume, kd, position, status. GSC: export the Queries table from Performance.</div></div>
 <div class="card"><div class="row"><input id="q" placeholder="Search…"><select id="fi2"></select><select id="fs"></select><span class="mu" id="cnt"></span></div>
@@ -392,8 +396,8 @@ $('#ca').onclick=async()=>{if(!CLOUD)return alert('This uses the secure AI serve
 async function tmLoad(){const [p,i,m]=await Promise.all([sb.from('profiles').select('*').order('email'),sb.from('invites').select('*').order('created_at'),sb.from('client_members').select('client_id,user_id')]);
  const mem=new Set((m.data||[]).map(r=>r.client_id+'|'+r.user_id)),CL=Object.entries(S.c).filter(([,c])=>c.id);
  $('#til').innerHTML=(i.data||[]).map(r=>`<div class="row" style="margin:3px 0"><span>${esc(r.email)}</span><span class="tag">${r.role}</span><span class="mu">${r.accepted_at?'joined':'waiting'}</span><button data-ri="${r.id}">Remove</button></div>`).join('')||'<span class="mu">No invites yet.</span>';
- $('#tpl').innerHTML=(p.data||[]).map(u=>`<div style="border-bottom:1px solid var(--bd);padding:6px 0"><div class="row"><b>${esc(u.email)}</b><select data-ur="${u.id}">${opt(['editor','admin'],u.role)}</select><label><input type="checkbox" data-ua="${u.id}" ${u.active?'checked':''}> active</label></div>${u.role=='editor'?`<details><summary>Assigned clients</summary>${CL.map(([n,c])=>`<label style="display:block"><input type="checkbox" data-mc="${c.id}" data-mu="${u.id}" ${mem.has(c.id+'|'+u.id)?'checked':''}> ${esc(n)}</label>`).join('')||'<span class="mu">No clients yet</span>'}</details>`:'<span class="mu">Admins see all clients</span>'}</div>`).join('');
- const T=$('#tmv');T.querySelectorAll('[data-ri]').forEach(b=>b.onclick=async()=>{await sb.from('invites').delete().eq('id',b.dataset.ri);tmLoad()});
+ $('#tpl').innerHTML=(p.data||[]).map(u=>`<div style="border-bottom:1px solid var(--bd);padding:6px 0"><div class="row"><b>${esc(u.email)}</b><select data-ur="${u.id}">${opt(['editor','admin'],u.role)}</select><label><input type="checkbox" data-ua="${u.id}" ${u.active?'checked':''}> active</label>${u.id==ME.id?'':`<button data-rm="${u.id}">Remove</button>`}</div>${u.role=='editor'?`<details><summary>Assigned clients</summary>${CL.map(([n,c])=>`<label style="display:block"><input type="checkbox" data-mc="${c.id}" data-mu="${u.id}" ${mem.has(c.id+'|'+u.id)?'checked':''}> ${esc(n)}</label>`).join('')||'<span class="mu">No clients yet</span>'}</details>`:'<span class="mu">Admins see all clients</span>'}</div>`).join('');
+ const T=$('#tmv');T.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{if(!confirm('Remove this person completely? They lose access and their name disappears. Clients they created stay with you.'))return;const r=await sb.rpc('admin_remove_user',{uid:b.dataset.rm});if(r.error)alert(/function|schema cache|not find|could not/i.test(r.error.message)?'First run the update SQL file in Supabase (see the instructions).':r.error.message);tmLoad()});T.querySelectorAll('[data-ri]').forEach(b=>b.onclick=async()=>{await sb.from('invites').delete().eq('id',b.dataset.ri);tmLoad()});
  T.querySelectorAll('[data-ur]').forEach(e=>e.onchange=async()=>{if(e.dataset.ur==ME.id){alert('You cannot change your own role.');return tmLoad()}const r=await sb.from('profiles').update({role:e.value}).eq('id',e.dataset.ur);if(r.error)alert(r.error.message);tmLoad()});
  T.querySelectorAll('[data-ua]').forEach(e=>e.onchange=async()=>{if(e.dataset.ua==ME.id){alert('You cannot deactivate yourself.');return tmLoad()}const r=await sb.from('profiles').update({active:e.checked}).eq('id',e.dataset.ua);if(r.error)alert(r.error.message)});
  T.querySelectorAll('[data-mc]').forEach(e=>e.onchange=async()=>{const k={client_id:e.dataset.mc,user_id:e.dataset.mu},r=e.checked?await sb.from('client_members').insert(k):await sb.from('client_members').delete().eq('client_id',k.client_id).eq('user_id',k.user_id);if(r.error){alert(r.error.message);tmLoad()}})}
@@ -415,6 +419,25 @@ function applyLang(){const ar=LANG=='ar';document.documentElement.dir=ar?'rtl':'
 new MutationObserver(()=>{if(LANG=='ar'){cancelAnimationFrame(raf);raf=requestAnimationFrame(applyLang)}}).observe(document.body,{childList:true,subtree:true});
 $('#lgb').onclick=()=>{LANG=LANG=='ar'?'en':'ar';try{localStorage.setItem('cp_lang',LANG)}catch(e){}$('#lgb').textContent=LANG=='ar'?'English':'عربي';applyLang()};
 $('#lgb').textContent=LANG=='ar'?'English':'عربي';
+$('#gp').onclick=async()=>{const c=cur(),p=c.p||{},n=+$('#gn').value||20,lg=$('#gnl').value;
+ let comp='';if(CLOUD&&c.id){const r=await sb.from('competitors').select('name,website,content_focus,strengths,weaknesses,priority').eq('client_id',c.id).limit(10);comp=(r.data||[]).map(x=>`- ${x.name} (${x.website||'n/a'}) focus: ${x.content_focus||'n/a'}; strengths: ${x.strengths||'n/a'}; weaknesses: ${x.weaknesses||'n/a'}${x.priority?' [priority]':''}`).join('\n')}
+ const have=c.i.slice(0,150).map(x=>x.kw).join(' | ')||'none',past=[...(c.old||[]),...(c.hist||[])].slice(0,150).map(x=>x.t).join(' | ')||'none',q=c.q||{},L=lg=='AR'?'Arabic':lg=='EN'?'English':'a mix of English and Arabic (tag each row EN or AR)';
+ const t=`You are a senior SEO content strategist. Suggest ${n} NEW blog post ideas for this client.
+CLIENT: ${S.cur}. Website: ${p.site||'n/a'}. Industry: ${p.ind||'n/a'}. Brief: ${p.brief||'n/a'}. Target market: ${p.m||'n/a'}. Target audience: ${p.a||'n/a'}. Brand voice: ${p.voice||'n/a'}. Products/services: ${p.prod||'n/a'}. Goals: ${p.goals||'n/a'}.
+COMPETITORS:
+${comp||'none provided'}
+ALREADY IN MY IDEA BANK (do not repeat): ${have}
+ALREADY PUBLISHED / PAST PLANS (do not repeat or closely overlap): ${past}
+RULES:
+- Language: ${L}.
+- Cover all search intents roughly like this: informational ${q.info}%, commercial ${q.comm}%, transactional ${q.trans}%, brand ${q.nav}%.
+- Vary the formats and angles, and group ideas into topic clusters.
+- Base the ideas on the client's real products, audience and market. Do not invent statistics or search volumes.
+OUTPUT: only CSV rows, no explanation and no markdown fences. The first line must be exactly:
+topic,keyword,intent,format,cluster,language,volume,kd,position,status
+Then one row per idea. Put text in double quotes if it contains commas. intent must be one of: informational, commercial, transactional, brand. format must be one of: ${FM.join(', ')}. language must be EN or AR. Leave volume, kd and position empty. status is always: idea.`;
+ $('#gpo').value=t;$('#gpo').hidden=false;
+ try{await navigator.clipboard.writeText(t);alert('Request copied. Paste it into claude.ai.')}catch(e){$('#gpo').select();alert('Select the text in the box, copy it, and paste it into claude.ai.')}};
 if(CLOUD)boot();else{prof();renderAll();showView('w')}
 applyLang();
 </script></main></body></html>
