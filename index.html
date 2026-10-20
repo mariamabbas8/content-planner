@@ -121,7 +121,7 @@ function mk(t,k,i,f,cl,l,v,d,p,s,src){return{id:uid(),topic:t,kw:k,intent:i,form
 function init(){const i=seed.split('\n').map(r=>{const a=r.split('|');return mk(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9])});return{cur:'Demo dental clinic',c:{'Demo dental clinic':{i,q:{info:40,comm:30,trans:20,nav:10}}}}}
 let S;if(!CLOUD){try{S=JSON.parse(localStorage.getItem('cp1'))}catch(e){}if(!S||!S.c)S=init()}else S={cur:'',c:{}};
 const save=()=>{if(CLOUD){queueSync();return}try{localStorage.setItem('cp1',JSON.stringify(S))}catch(e){}};
-const cur=()=>S.c[S.cur];let lastPool=[],plan=[],flags=[],sortK='',sortD=1;
+const cur=()=>S.c[S.cur];let lastWhy=null,lastPool=[],plan=[],flags=[],sortK='',sortD=1;
 const opt=(a,sel)=>a.map(x=>`<option ${x==sel?'selected':''}>${x}</option>`).join('');
 const iopt=sel=>Object.entries(INT).map(([k,v])=>`<option value="${k}" ${k==sel?'selected':''}>${v}</option>`).join('');
 
@@ -153,20 +153,23 @@ function gen(){const c=cur(),n=+$('#n').value||0,r=+$('#r').value||0,lg=$('#lg')
  const ok=x=>lg=='all'||x.lang==lg;
  const pool=c.i.filter(x=>ok(x)&&['idea','planned','briefed'].includes(x.status)).map(x=>({...x,s:score(x)})).sort((a,b)=>b.s-a.s);
  const ref=c.i.filter(x=>ok(x)&&x.status=='needs refresh').map(x=>({...x,s:score(x),refresh:1,why:'Refresh slot: declining or outdated post'})).sort((a,b)=>(pins.includes(b.id)-pins.includes(a.id))||b.s-a.s).slice(0,r);
- lastPool=pool;const pins=c.pins||[];const pub=c.i.filter(x=>x.status=='published'),newN=Math.max(0,n-ref.length),ch=[],fl=new Map,used=new Set;
+ lastPool=pool;lastWhy={all:c.i.filter(x=>['idea','planned','briefed'].includes(x.status)).length,lang:pool.length,flag:0};const pins=c.pins||[];const pub=c.i.filter(x=>x.status=='published'),newN=Math.max(0,n-ref.length),ch=[],fl=new Map,used=new Set;
  const conflict=x=>{const o=dup(x);if(o)return{kw:o.t,old:1};return [...ch,...ref,...pub].find(y=>y.id!=x.id&&(sim(x.kw,y.kw)>=.6||(x.url&&x.url==y.url)))};
- const take=(x,why)=>{if(ch.includes(x)||ch.length>=newN)return 0;const cf=conflict(x);if(cf){fl.set(x.id,{x,cf});return 0}
-  if(used.has(x.cluster+'|'+x.format))return 0;used.add(x.cluster+'|'+x.format);x.why=why;ch.push(x);return 1};
+ let rx=false;const take=(x,why)=>{if(ch.includes(x)||ch.length>=newN)return 0;const cf=conflict(x);if(cf){fl.set(x.id,{x,cf});return 0}
+  if(!rx&&used.has(x.cluster+'|'+x.format))return 0;used.add(x.cluster+'|'+x.format);x.why=why;ch.push(x);return 1};
  pool.filter(x=>pins.includes(x.id)&&ch.length<newN).forEach(x=>{used.add(x.cluster+'|'+x.format);x.why='📌 Pinned by you · score '+x.s.toFixed(1);ch.push(x)});
  for(const k in INT){const t=Math.round(newN*(c.q[k]||0)/100);let got=0;for(const x of pool.filter(y=>y.intent==k)){if(got>=t)break;got+=take(x,'')}
   ch.filter(x=>x.intent==k&&!x.why).forEach(x=>x.why=`Score ${x.s.toFixed(1)} · ${INT[k]} quota (${got}/${t})`)}
  for(const x of pool){if(ch.length>=newN)break;take(x,'')}
+ rx=true;for(const x of pool){if(ch.length>=newN)break;take(x,'')}
  ch.forEach(x=>{if(!x.why)x.why=`Score ${x.s.toFixed(1)} · filled after quotas (best remaining)`});
  // order: never same format back to back, favour higher score
  let rest=[...ch,...ref],ord=[];while(rest.length){const p=ord[ord.length-1];const i=rest.findIndex(x=>!p||x.format!=p.format);ord.push(...rest.splice(i<0?0:i,1))}
- plan=ord.map((x,i)=>({...x,wk:Math.floor(i*4/ord.length)+1}));flags=[...fl.values()];show()}
+ plan=ord.map((x,i)=>({...x,wk:Math.floor(i*4/ord.length)+1}));flags=[...fl.values()];lastWhy.flag=flags.length;show()}
 
-function show(){const c=cur();if(!plan.length){$('#out').innerHTML='<div class="card mu">No plan yet. Check your quotas and click Generate. Only ideas with status idea/planned/briefed are eligible.</div>';return}
+function show(){const c=cur();if(!plan.length){const w=lastWhy;let m='No plan yet. Check your quotas and click Generate. Only ideas with status idea/planned/briefed are eligible.';
+ if(w)m=w.all==0?'No eligible ideas: the Idea bank is empty or every idea is already published. Add ideas with status "idea".':w.lang==0?`None of your ${w.all} eligible ideas match the Language filter. Change <b>Language</b> to All, or check the language of each idea.`:w.flag>0?`${w.lang} ideas matched, but ${w.flag} were skipped because they overlap past content (old plans or earlier plans), so nothing was left to plan. Review the list below, add new ideas, or edit the past content plan.`:'No ideas could be selected. Check that Posts is more than 0.';
+ $('#out').innerHTML='<div class="card wr">'+m+'</div>'+(flags.length?'<div class="card"><b>Skipped as overlapping</b>'+flags.slice(0,40).map(f=>`<div dir="auto">${esc(f.x.topic)} overlaps ${f.cf.old?'past plan item ':''}“${esc(f.cf.kw)}”</div>`).join('')+'</div>':'');return}
  let h='';for(let w=1;w<=4;w++){const a=plan.filter(x=>x.wk==w);if(!a.length)continue;h+=`<div class="card"><b>Week ${w}</b>`+a.map(x=>{
   const links=c.i.filter(y=>y.cluster==x.cluster&&y.id!=x.id).slice(0,3).map(y=>y.topic);
   return `<details><summary dir="auto">${(c.pins||[]).includes(x.id)?'📌 ':''}<b>${esc(x.topic)}</b> <span class="tag">${INT[x.intent]}</span> <span class="tag">${esc(x.format)}</span> <span class="mu">${x.lang} · ${esc(x.cluster)}</span></summary>
