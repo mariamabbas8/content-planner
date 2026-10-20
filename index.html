@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Content Planner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--tx:#1d1d1b;--mu:#6b6b66;--bd:#e2e0d8;--ac:#0f6e56;--ac2:#e1f5ee;--wr:#b4540a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171716;--card:#222220;--tx:#eeede8;--mu:#9b9a93;--bd:#383835;--ac:#3fc19b;--ac2:#12332a;--wr:#f0a35e}}
+:root[data-theme="dark"]{--bg:#171716;--card:#222220;--tx:#eeede8;--mu:#9b9a93;--bd:#383835;--ac:#3fc19b;--ac2:#12332a;--wr:#f0a35e}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0}header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}header .sp{flex:1}
+input,select,textarea,button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;max-width:100%}
+button{cursor:pointer}button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.tabs{display:flex;gap:4px;margin-bottom:12px}.tabs button.on{background:var(--ac2);border-color:var(--ac);color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.row input[type=number]{width:70px}
+.sc{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:start;padding:5px 6px;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{color:var(--mu);font-weight:500;cursor:pointer}.mu{color:var(--mu)}.wr{color:var(--wr)}
+.tag{background:var(--ac2);color:var(--ac);border-radius:4px;padding:1px 6px;font-size:12px}
+.bar{display:flex;align-items:center;gap:6px;margin:3px 0}.bar i{display:block;height:10px;background:var(--ac);border-radius:3px}.bar span:first-child{width:130px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+details{border-bottom:1px solid var(--bd);padding:6px 0}summary{cursor:pointer}
+.lay{display:grid;grid-template-columns:270px 1fr;gap:12px}@media(max-width:800px){.lay{grid-template-columns:1fr}}main{max-width:1300px}#cll{max-height:260px;overflow:auto}.cb{display:block;width:100%;text-align:start;margin:2px 0}.cb.on{background:var(--ac2);border-color:var(--ac);color:var(--ac)}aside textarea,aside input{box-sizing:border-box}
+.lay[hidden],#cpg[hidden]{display:none}.cc:hover{border-color:var(--ac)}.modal{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9;padding:16px}.modal[hidden]{display:none}.sw{display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid var(--bd);vertical-align:middle}
+@media print{.tabs,header,.noprint{display:none}}
+</style></head><body><main>
+<header><h1>Content Planner</h1><button id="vc">Clients</button><button id="tmb" hidden>Team</button><span class="sp"></span>
+<button id="ex">Export JSON</button><button id="im">Import JSON</button><input type="file" id="fi" accept=".json" hidden><button id="lgb">عربي</button><span class="mu" id="sv"></span><span class="mu" id="who"></span><button id="lo" hidden>Sign out</button></header>
+<div id="cpg" hidden><div class="card"><div class="row"><b>Clients</b><input id="cq" placeholder="Search clients…" style="flex:1"><select id="cf"></select><button class="p" id="cn2">+ New client</button></div></div><div class="g" id="cgrid"></div></div>
+<div id="login" class="modal" hidden><div class="card" style="text-align:center;max-width:380px"><h1>Content Planner</h1><p class="mu" id="lm">Invite-only. Sign in with the Google account your admin invited.</p><button class="p" id="gl">Sign in with Google</button></div></div>
+<div id="tmv" hidden><div class="card"><div class="row"><b>Team</b><span style="flex:1"></span><button id="tcl">Copy invite link</button></div>
+<div class="row" style="margin-top:8px"><input id="ie" type="email" placeholder="Email to invite" style="flex:1"><select id="ir"><option value="editor">Editor</option><option value="admin">Admin</option></select><button class="p" id="ia">Invite</button></div>
+<p class="mu">Invited people open the invite link and sign in with that Google account.</p></div>
+<div class="card"><b>Invites</b><div id="til"></div></div><div class="card"><b>People</b><div id="tpl"></div></div></div>
+<div class="lay"><aside><div class="card"><b>Clients</b><div class="row" style="margin:6px 0"><input id="cs" placeholder="Search clients…" style="flex:1"><button id="nc" title="New client">+ New</button></div><div id="cll"></div></div>
+<div class="card"><b>Client profile</b>
+<input id="p_n" placeholder="Client name" style="width:100%;margin:6px 0"><input id="p_i" placeholder="Industry" style="width:100%;margin-bottom:6px"><input id="p_s" placeholder="Website" style="width:100%;margin-bottom:6px">
+<textarea id="p_b" rows="3" placeholder="Brief overview" style="width:100%;margin-bottom:6px" dir="auto"></textarea><input id="p_m" placeholder="Target market (e.g. Egypt, Gulf)" style="width:100%;margin-bottom:6px" dir="auto"><textarea id="p_a" rows="2" placeholder="Target audience" style="width:100%;margin-bottom:6px" dir="auto"></textarea>
+<button id="dc">Delete client</button></div></aside><div style="min-width:0">
+<div class="tabs"><button data-t="a" class="on">Idea bank</button><button data-t="b">Monthly plan</button><button data-t="c">Dashboard</button><button data-t="pf">Profile</button><button data-t="cp">Competitors</button><button data-t="hs">Plan history</button></div>
+
+<section id="a">
+<div class="card"><div class="row" id="af"></div></div>
+<div class="card"><b>Bulk paste</b> <span class="mu">one keyword per line; intent is auto-suggested (EN + AR), editable in the table</span>
+<textarea id="bk" rows="3" style="width:100%;margin:6px 0" dir="auto"></textarea>
+<div class="row"><select id="bl"><option>EN</option><option>AR</option></select><button id="bb">Add keywords</button></div></div>
+<div class="card"><b>Import</b><div class="row" style="margin-top:6px"><button id="bp">Import pasted rows above (Sheets/CSV)</button><label>CSV file <input type="file" id="fc" accept=".csv,.tsv,.txt"></label><label>GSC queries export <input type="file" id="fg" accept=".csv,.tsv,.txt"></label></div>
+<div class="mu">CSV columns (header row optional): topic, keyword, intent, format, cluster, language, volume, kd, position, status. GSC: export the Queries table from Performance.</div></div>
+<div class="card"><div class="row"><input id="q" placeholder="Search…"><select id="fi2"></select><select id="fs"></select><span class="mu" id="cnt"></span></div>
+<div class="sc"><table id="tb"></table></div></div></section>
+
+<section id="b" hidden>
+<div class="card"><b>Past content plans (Google Sheets)</b> <span class="mu">In Google Sheets select the old plan cells, copy, and paste here (title, keyword, URL: keyword and URL optional) or upload a CSV. New ideas and generated plans are checked against it, and overlaps are flagged.</span>
+<textarea id="ob" rows="4" style="width:100%;margin:6px 0" dir="auto"></textarea>
+<div class="row"><button class="p" id="oa">Add to old plan</button><input type="file" id="of" accept=".csv,.tsv,.txt"><button id="oc">Clear old plan</button><span class="mu" id="oi"></span></div>
+<div class="sc" style="margin-top:8px"><table id="ot"></table></div></div>
+<div class="card"><div class="row">Month <input type="month" id="mo"> Posts <input type="number" id="n" value="8" min="1"> Refresh slots <input type="number" id="r" value="1" min="0"> Language <select id="lg"><option value="all">All</option><option>EN</option><option>AR</option></select></div>
+<div class="row" style="margin-top:8px">Intent quota %: <span id="qs" class="row"></span> <button class="p" id="go">Generate plan</button> <button id="csv" class="noprint">Export CSV</button> <button id="tsv" class="noprint">Copy for Google Sheets</button> <button onclick="print()" class="noprint">Print</button> <button id="aa" class="noprint">Analyze all with AI</button></div></div>
+<div id="out"></div></section>
+
+<section id="c" hidden><div class="g" id="dash"></div></section>
+<section id="pf" hidden>
+<div class="card"><div class="row"><b>More profile details</b><span style="flex:1"></span><button id="aw">Auto-fill from website (AI)</button></div><div id="awo"></div>
+<textarea id="p_v" rows="2" placeholder="Brand voice and tone" style="width:100%;margin-top:8px" dir="auto"></textarea>
+<textarea id="p_pr" rows="2" placeholder="Products / services" style="width:100%;margin-top:6px" dir="auto"></textarea>
+<textarea id="p_so" rows="3" placeholder="Social media links, one per line (Instagram: https://…)" style="width:100%;margin-top:6px"></textarea>
+<div class="row" style="margin-top:6px"><input id="p_co" placeholder="Brand colors, comma separated (#0f6e56, #ffffff)" style="flex:1"><span id="sws"></span></div>
+<textarea id="p_g" rows="2" placeholder="Goals" style="width:100%;margin-top:6px" dir="auto"></textarea>
+<textarea id="p_nt" rows="2" placeholder="Notes" style="width:100%;margin-top:6px" dir="auto"></textarea></div>
+<div class="card" id="fcard"><b>Logo and attachments</b><div class="row" style="margin:6px 0"><label>Logo <input type="file" id="lfi" accept="image/*"></label><label>Attachments <input type="file" id="afi" multiple></label></div><div id="fl"></div></div>
+<div class="card" id="kcard"><div class="row"><b>KPIs</b><span class="mu">optional</span><button id="ka">+ Add KPI</button></div><div id="kl"></div></div>
+</section>
+<section id="cp" hidden><div class="card"><div class="row"><b>Competitors</b><span style="flex:1"></span><button id="ca">Analyze competitors with AI</button></div>
+<div class="row" style="margin-top:8px"><input id="c_n" placeholder="Competitor name"><input id="c_w" placeholder="Website"><button class="p" id="cadd">+ Add competitor</button></div><div id="cao"></div></div><div id="cpl"></div></section>
+<section id="hs" hidden><div class="card"><b>Saved plans</b> <span class="mu">every generated plan is saved automatically</span><div id="hl" style="margin-top:8px"></div></div></section></div></div>
+
+<script>
+// ===== PASTE YOUR TWO SUPABASE VALUES HERE (Stage 5). Leave empty to run in local mode. =====
+const SUPA_URL="https://iqvqsaskaiowsvumeqjk.supabase.co",SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxdnFzYXNrYWlvd3N2dW1lcWprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MzMzMTIsImV4cCI6MjEwODAwOTMxMn0._BCn3-V2zJvBIMDWDSREJc6wZAsfv_-119JLm5_FAcw";
+const CLOUD=!!(SUPA_URL&&SUPA_KEY&&window.supabase);
+const uid=()=>crypto.randomUUID?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c=="x"?r:r&3|8).toString(16)});
+const INT={info:'Informational',comm:'Commercial',trans:'Transactional',nav:'Brand'};
+const W={info:1,comm:1.5,trans:2,nav:.8}; // intent weights: tune per client
+const FM=['how-to guide','listicle','comparison','case study','glossary','opinion','FAQ','checklist','template','roundup'];
+const ST=['idea','planned','briefed','published','needs refresh'];
+const OUT={'how-to guide':['What you need','Step-by-step process','Common mistakes','Tools & costs'],listicle:['Intro & criteria','Items 1-N with pros/cons','How to choose','Summary'],comparison:['Options at a glance','Comparison table','Who each is best for','Verdict'],'case study':['Client & challenge','Approach','Results with numbers','Lessons'],glossary:['Definition','Why it matters','Examples','Related terms'],opinion:['Thesis','Evidence','Counter-arguments','Takeaway'],FAQ:['Top questions (from PAA)','Short direct answers','Related resources'],checklist:['Who it is for','The checklist','Pitfalls','Next steps'],template:['What is included','How to use it','Example filled in'],roundup:['Scope','Curated entries','Key trends']};
+const CTA={awareness:'Subscribe / read related guide',consideration:'Download resource / see case studies',decision:'Book a consultation / get a quote'};
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const stage=i=>i=='info'?'awareness':i=='comm'?'consideration':'decision';
+function detect(k){ // keyword-pattern intent rules
+ if(/(buy|price|cost|near me|book|quote|سعر|أسعار|اسعار|شراء|تكلفة|حجز|قريب)/i.test(k))return'trans';
+ if(/(best|vs|review|compare|top |alternative|أفضل|افضل|مقارنة)/i.test(k))return'comm';
+ return'info'}
+const isAr=s=>/[\u0600-\u06FF]/.test(s);
+const seed=`Dental implant cost in Egypt|dental implant cost|trans|comparison|Implants|EN|1900|35||idea
+How to care for dental implants|dental implant care|info|how-to guide|Implants|EN|800|20|12|idea
+What is a dental implant|what is a dental implant|info|glossary|Implants|EN|2400|40|8|idea
+Best dental clinics in Cairo|best dental clinic cairo|comm|roundup|Brand|EN|1500|45||idea
+Invisalign vs braces|invisalign vs braces|comm|comparison|Orthodontics|EN|1300|38|18|idea
+How long do braces take|how long do braces take|info|FAQ|Orthodontics|EN|900|25|6|idea
+Teeth whitening price|teeth whitening price|trans|listicle|Cosmetic|EN|1100|30||idea
+Teeth whitening at home: safe or not|teeth whitening at home|info|opinion|Cosmetic|EN|1700|33|15|idea
+Veneers case study: smile makeover|veneers before after|comm|case study|Cosmetic|EN|600|22||idea
+Book a dental check-up|book dentist appointment|trans|checklist|Brand|EN|500|18|3|idea
+Pre-dental-visit checklist|dental visit checklist|info|checklist|General|EN|300|10||idea
+Root canal pain: what to expect|root canal pain|info|how-to guide|General|EN|2100|42|22|idea
+Root canal guide (old post)|root canal treatment|info|how-to guide|General|EN|1200|40|14|needs refresh
+Gum disease glossary|gingivitis meaning|info|glossary|General|EN|1000|30|9|published
+كيف أعتني بزراعة الأسنان|كيف اعتني بزراعة الاسنان|info|how-to guide|Implants|AR|700|15||idea
+سعر تقويم الأسنان في مصر|سعر تقويم الاسنان في مصر|trans|listicle|Orthodontics|AR|2600|28|11|idea
+أفضل عيادة أسنان في القاهرة|افضل عيادة اسنان في القاهرة|comm|roundup|Brand|AR|1800|40||idea
+ما هو حشو العصب|ما هو حشو العصب|info|glossary|General|AR|1500|25|7|idea
+تبييض الأسنان: الأسعار والنتائج|تبييض الاسنان|comm|comparison|Cosmetic|AR|3200|36|13|idea
+حجز موعد مع دكتور أسنان|حجز دكتور اسنان|trans|checklist|Brand|AR|900|20||idea
+أسئلة شائعة عن عدسات الأسنان|عدسات الاسنان|info|FAQ|Cosmetic|AR|1400|27||idea
+قصة نجاح ابتسامة هوليود|ابتسامة هوليود|comm|case study|Cosmetic|AR|1100|31||idea
+Pediatric dentist: when to start|pediatric dentist when to start|info|how-to guide|Kids|EN|450|14||idea
+Dental implant price (draft)|dental implant price|trans|listicle|Implants|EN|1600|34||idea`;
+function mk(t,k,i,f,cl,l,v,d,p,s,src){return{id:uid(),topic:t,kw:k,intent:i,format:f,cluster:cl||'General',lang:l,vol:+v||0,kd:+d||0,pos:p===''||p==null?'':+p,url:'',status:s||'idea',stage:stage(i),src:src||'brainstorm'}}
+function init(){const i=seed.split('\n').map(r=>{const a=r.split('|');return mk(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9])});return{cur:'Demo dental clinic',c:{'Demo dental clinic':{i,q:{info:40,comm:30,trans:20,nav:10}}}}}
+let S;if(!CLOUD){try{S=JSON.parse(localStorage.getItem('cp1'))}catch(e){}if(!S||!S.c)S=init()}else S={cur:'',c:{}};
+const save=()=>{if(CLOUD){queueSync();return}try{localStorage.setItem('cp1',JSON.stringify(S))}catch(e){}};
+const cur=()=>S.c[S.cur];let lastPool=[],plan=[],flags=[],sortK='',sortD=1;
+const opt=(a,sel)=>a.map(x=>`<option ${x==sel?'selected':''}>${x}</option>`).join('');
+const iopt=sel=>Object.entries(INT).map(([k,v])=>`<option value="${k}" ${k==sel?'selected':''}>${v}</option>`).join('');
+
+function renderAll(){ cls();
+ $('#af').innerHTML=`<input id="f_t" placeholder="Topic / title" dir="auto"><input id="f_k" placeholder="Primary keyword" dir="auto"><select id="f_i">${iopt('info')}</select><select id="f_f">${opt(FM)}</select><input id="f_c" placeholder="Cluster" size="10"><select id="f_l"><option>EN</option><option>AR</option></select><input id="f_v" type="number" placeholder="Vol"><input id="f_d" type="number" placeholder="KD"><input id="f_p" type="number" placeholder="Pos"><button class="p" id="f_a">Add idea</button>`;
+ $('#fi2').innerHTML='<option value="">All intents</option>'+iopt('');$('#fs').innerHTML='<option value="">All statuses</option>'+opt(ST);
+ $('#qs').innerHTML=Object.entries(INT).map(([k,v])=>`${v} <input type="number" data-q="${k}" value="${cur().q[k]}">`).join(' ');
+ $('#f_a').onclick=()=>{const t=$('#f_t').value.trim(),k=$('#f_k').value.trim();if(!t||!k)return alert('Topic and keyword are required');
+  const x=mk(t,k,$('#f_i').value,$('#f_f').value,$('#f_c').value.trim(),$('#f_l').value,$('#f_v').value,$('#f_d').value,$('#f_p').value);cur().i.unshift(x);save();['f_t','f_k'].forEach(i=>$('#'+i).value='');tbl()};
+ document.querySelectorAll('[data-q]').forEach(e=>e.onchange=()=>{cur().q[e.dataset.q]=+e.value||0;save()});tbl()}
+
+function tbl(){const q=$('#q').value.toLowerCase(),fi=$('#fi2').value,fs=$('#fs').value;
+ let a=cur().i.filter(x=>(!q||(x.topic+x.kw+x.cluster).toLowerCase().includes(q))&&(!fi||x.intent==fi)&&(!fs||x.status==fs));
+ if(sortK)a.sort((x,y)=>(x[sortK]>y[sortK]?1:-1)*sortD);
+ const H=[['topic','Topic'],['kw','Keyword'],['intent','Intent'],['format','Format'],['cluster','Cluster'],['lang','Lang'],['vol','Vol'],['kd','KD'],['pos','Pos'],['status','Status']];
+ $('#cnt').textContent=a.length+' of '+cur().i.length;
+ $('#tb').innerHTML='<tr>'+H.map(h=>`<th data-s="${h[0]}">${h[1]}</th>`).join('')+'<th>Old plan overlap</th><th></th></tr>'+(a.length?a.map(x=>`<tr><td dir="auto">${esc(x.topic)}</td><td dir="auto">${esc(x.kw)}</td><td><select data-id="${x.id}" data-f="intent">${iopt(x.intent)}</select></td><td>${esc(x.format)}</td><td>${esc(x.cluster)}</td><td>${x.lang}</td><td>${x.vol}</td><td>${x.kd}</td><td>${x.pos}</td><td><select data-id="${x.id}" data-f="status">${opt(ST,x.status)}</select></td><td class="wr" dir="auto">${x.status!='published'&&dup(x)?'⚠ '+esc(dup(x).t):''}</td><td><button data-del="${x.id}">✕</button></td></tr>`).join(''):'<tr><td colspan="12" class="mu">No ideas yet. Add one above or paste keywords.</td></tr>');
+ $('#tb').querySelectorAll('[data-s]').forEach(h=>h.onclick=()=>{sortD=sortK==h.dataset.s?-sortD:1;sortK=h.dataset.s;tbl()});
+ $('#tb').querySelectorAll('select').forEach(s=>s.onchange=()=>{const x=cur().i.find(y=>y.id==s.dataset.id);x[s.dataset.f]=s.value;if(s.dataset.f=='intent')x.stage=stage(s.value);save()});
+ $('#tb').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{cur().i=cur().i.filter(y=>y.id!=b.dataset.del);save();tbl()})}
+
+// ---- Planning engine (deterministic) ----
+// opportunity = volume * intentWeight * rankingGap / (difficulty+1)
+function score(x){const g=x.pos===''?1.5:x.pos<=4?.5:x.pos<=20?2:1.2; // quick wins at 5-20
+ return x.vol*W[x.intent]*g/(x.kd+1)}
+const tok=k=>new Set(k.toLowerCase().split(/\s+/).filter(Boolean));
+function sim(a,b){const A=tok(a),B=tok(b);let n=0;A.forEach(t=>B.has(t)&&n++);return n/(A.size+B.size-n||1)}
+function gen(){const c=cur(),n=+$('#n').value||0,r=+$('#r').value||0,lg=$('#lg').value;
+ const ok=x=>lg=='all'||x.lang==lg;
+ const pool=c.i.filter(x=>ok(x)&&['idea','planned','briefed'].includes(x.status)).map(x=>({...x,s:score(x)})).sort((a,b)=>b.s-a.s);
+ const ref=c.i.filter(x=>ok(x)&&x.status=='needs refresh').map(x=>({...x,s:score(x),refresh:1,why:'Refresh slot: declining or outdated post'})).sort((a,b)=>(pins.includes(b.id)-pins.includes(a.id))||b.s-a.s).slice(0,r);
+ lastPool=pool;const pins=c.pins||[];const pub=c.i.filter(x=>x.status=='published'),newN=Math.max(0,n-ref.length),ch=[],fl=new Map,used=new Set;
+ const conflict=x=>{const o=dup(x);if(o)return{kw:o.t,old:1};return [...ch,...ref,...pub].find(y=>y.id!=x.id&&(sim(x.kw,y.kw)>=.6||(x.url&&x.url==y.url)))};
+ const take=(x,why)=>{if(ch.includes(x)||ch.length>=newN)return 0;const cf=conflict(x);if(cf){fl.set(x.id,{x,cf});return 0}
+  if(used.has(x.cluster+'|'+x.format))return 0;used.add(x.cluster+'|'+x.format);x.why=why;ch.push(x);return 1};
+ pool.filter(x=>pins.includes(x.id)&&ch.length<newN).forEach(x=>{used.add(x.cluster+'|'+x.format);x.why='📌 Pinned by you · score '+x.s.toFixed(1);ch.push(x)});
+ for(const k in INT){const t=Math.round(newN*(c.q[k]||0)/100);let got=0;for(const x of pool.filter(y=>y.intent==k)){if(got>=t)break;got+=take(x,'')}
+  ch.filter(x=>x.intent==k&&!x.why).forEach(x=>x.why=`Score ${x.s.toFixed(1)} · ${INT[k]} quota (${got}/${t})`)}
+ for(const x of pool){if(ch.length>=newN)break;take(x,'')}
+ ch.forEach(x=>{if(!x.why)x.why=`Score ${x.s.toFixed(1)} · filled after quotas (best remaining)`});
+ // order: never same format back to back, favour higher score
+ let rest=[...ch,...ref],ord=[];while(rest.length){const p=ord[ord.length-1];const i=rest.findIndex(x=>!p||x.format!=p.format);ord.push(...rest.splice(i<0?0:i,1))}
+ plan=ord.map((x,i)=>({...x,wk:Math.floor(i*4/ord.length)+1}));flags=[...fl.values()];show()}
+
+function show(){const c=cur();if(!plan.length){$('#out').innerHTML='<div class="card mu">No plan yet. Check your quotas and click Generate. Only ideas with status idea/planned/briefed are eligible.</div>';return}
+ let h='';for(let w=1;w<=4;w++){const a=plan.filter(x=>x.wk==w);if(!a.length)continue;h+=`<div class="card"><b>Week ${w}</b>`+a.map(x=>{
+  const links=c.i.filter(y=>y.cluster==x.cluster&&y.id!=x.id).slice(0,3).map(y=>y.topic);
+  return `<details><summary dir="auto">${(c.pins||[]).includes(x.id)?'📌 ':''}<b>${esc(x.topic)}</b> <span class="tag">${INT[x.intent]}</span> <span class="tag">${esc(x.format)}</span> <span class="mu">${x.lang} · ${esc(x.cluster)}</span></summary>
+  <div class="mu">${esc(x.why)}</div><p><b>Target keyword:</b> <span dir="auto">${esc(x.kw)}</span> · vol ${x.vol} · KD ${x.kd}</p>
+  <p><b>Suggested H2s:</b></p><ol>${(OUT[x.format]||[]).map(o=>`<li>${o}</li>`).join('')}</ol>
+  <p><b>Internal links:</b> ${links.length?links.map(esc).join('; '):'none in cluster yet'}</p><p><b>CTA:</b> ${CTA[x.stage]}</p><div id="an-${x.id}">${anHtml(x)}</div><div id="bo-${x.id}">${boHtml(x)}</div><div class="row noprint"><button data-an="${x.id}">Analyze market (AI)</button><button data-bo="${x.id}">Optimize brief (AI)</button><button data-pin="${x.id}">${(c.pins||[]).includes(x.id)?'Unpin':'📌 Pin'}</button>${x.refresh?'':`<button data-sw="${x.id}">↔ Swap</button>`}</div></details>`}).join('')+'</div>'}
+ if(flags.length)h+=`<div class="card"><b class="wr">Cannibalization warnings</b>`+flags.map(f=>`<div dir="auto">${esc(f.x.topic)} overlaps ${f.cf.old?'old plan item ':''}“${esc(f.cf.kw)}”. Merge or refresh instead of a new post.</div>`).join('')+'</div>';
+ $('#out').innerHTML=h;$('#out').querySelectorAll('[data-an]').forEach(b=>b.onclick=()=>analyze(b.dataset.an));const q=(a,f)=>$('#out').querySelectorAll(a).forEach(b=>b.onclick=()=>f(b.dataset[a.slice(6,-1)]));q('[data-bo]',optimize);q('[data-pin]',pin);q('[data-sw]',swap)}
+
+function dash(){const a=cur().i;const bars=(t,f,keys)=>{const m={};a.forEach(x=>{const k=f(x);m[k]=(m[k]||0)+1});const mx=Math.max(1,...Object.values(m));return`<div class="card"><b>${t}</b>`+(keys||Object.keys(m)).map(k=>`<div class="bar"><span>${esc(INT[k]||k)}</span><i style="width:${(m[k]||0)/mx*120}px"></i><span>${m[k]||0}</span></div>`).join('')+'</div>'};
+ const cl=[...new Set(a.map(x=>x.cluster))],gaps=cl.map(c=>({c,m:Object.keys(INT).filter(k=>!a.some(x=>x.cluster==c&&x.intent==k))})).filter(g=>g.m.length);
+ $('#dash').innerHTML=bars('Intent',x=>x.intent,Object.keys(INT))+bars('Format',x=>x.format)+bars('Status',x=>x.status,ST)+bars('Cluster',x=>x.cluster)+`<div class="card"><b>Cluster gaps</b>${gaps.map(g=>`<div>${esc(g.c)}: <span class="wr">no ${g.m.map(k=>INT[k].toLowerCase()).join(', ')}</span></div>`).join('')||'<div class="mu">No gaps</div>'}</div>`}
+
+// ---- wiring ----
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x==b));['a','b','c','pf','cp','hs'].forEach(s=>$('#'+s).hidden=s!=b.dataset.t);if(b.dataset.t=='c')dash();if(b.dataset.t=='b')show();if(b.dataset.t=='pf')pfLoad();if(b.dataset.t=='cp')cpLoad();if(b.dataset.t=='hs')hsLoad()});
+$('#nc').onclick=()=>{const n=(prompt('Client name?')||'').trim();if(!n||S.c[n])return;S.c[n]={i:[],q:{info:40,comm:30,trans:20,nav:10},p:{},old:[],hist:[],_loaded:1};S.cur=n;save();plan=[];curPlanId=null;renderAll();prof();showView('w')};
+$('#bb').onclick=()=>{const l=$('#bk').value.split('\n').map(s=>s.trim()).filter(Boolean);if(!l.length)return;let sk=0;l.forEach(k=>{if(cur().i.some(y=>y.kw.toLowerCase()==k.toLowerCase())){sk++;return}const i=detect(k);cur().i.push(mk(k,k,i,'how-to guide','General',isAr(k)?'AR':$('#bl').value,0,0,'','idea','bulk paste'))});$('#bk').value='';save();tbl();if(sk)alert(sk+' duplicate keyword(s) skipped')};
+['q','fi2','fs'].forEach(i=>$('#'+i).oninput=tbl);$('#go').onclick=()=>gen();
+$('#mo').value=new Date().toISOString().slice(0,7);
+$('#csv').onclick=()=>{if(!plan.length)return alert('Generate a plan first');const h=['week','topic','keyword','intent','format','cluster','lang','why'];
+ const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const t='\ufeff'+[h.join(',')].concat(plan.map(x=>[x.wk,x.topic,x.kw,INT[x.intent],x.format,x.cluster,x.lang,x.why].map(q).join(','))).join('\n');
+ dl('plan-'+$('#mo').value+'.csv',t,'text/csv')};
+function dl(n,t,m){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()}
+$('#ex').onclick=async()=>{if(CLOUD){setSv('Preparing export…');for(const n in S.c)await loadClient(n);setSv('')}dl('content-planner.json',JSON.stringify(S,(k,v)=>k[0]=='_'?undefined:v),'application/json')};
+$('#im').onclick=()=>$('#fi').click();
+$('#fi').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.c)throw 0;if(CLOUD)return legacy(d);S=d;save();plan=[];renderAll()}catch(x){alert('Invalid backup file')}})};
+// ---- client profile + old plan ----
+function dup(x){let b=null,m=0;[...(cur().old||[]),...(cur().hist||[]).filter(h=>h.m!=$('#mo').value)].forEach(o=>{const v=Math.max(sim(x.kw,o.k),sim(x.kw,o.t),sim(x.topic,o.t));if(v>m){m=v;b=o.t}});return m>=.6?{m,t:b}:null}
+['p_s','p_i','p_b','p_m','p_a'].forEach(id=>$('#'+id).oninput=()=>{const p=cur().p||(cur().p={});p.site=$('#p_s').value;p.ind=$('#p_i').value;p.brief=$('#p_b').value;p.m=$('#p_m').value;p.a=$('#p_a').value;save()});
+function parse(t){return t.split(/\r?\n/).filter(l=>l.trim()).map(l=>{const sp=l.includes('\t')?'\t':',',o=[];let c='',q=0;for(const ch of l){if(ch=='"')q=!q;else if(ch==sp&&!q){o.push(c);c=''}else c+=ch}o.push(c);return o.map(v=>v.trim())})}
+function addOld(t){const r=parse(t);if(r.length&&/^(title|topic|keyword|عنوان)/i.test(r[0][0]))r.shift();const o=cur().old||(cur().old=[]);let n=0;
+ r.forEach(a=>{if(!a[0]||o.some(y=>y.t==a[0]))return;o.push({t:a[0],k:a[1]||a[0],u:a[2]||''});n++});save();oldv();tbl();$('#oi').textContent=n+' added, '+(r.length-n)+' skipped as duplicates/empty'}
+function oldv(){const o=cur().old||[];$('#ot').innerHTML=o.length?'<tr><th>Title</th><th>Keyword</th><th>URL</th></tr>'+o.slice(0,200).map(y=>`<tr><td dir="auto">${esc(y.t)}</td><td dir="auto">${esc(y.k)}</td><td>${esc(y.u)}</td></tr>`).join('')+(o.length>200?`<tr><td class="mu">…and ${o.length-200} more</td></tr>`:''):'<tr><td class="mu">No old content added yet.</td></tr>'}
+function prof(){const p=cur().p||{};$('#p_n').value=S.cur;pfFill(p);$('#p_m').value=p.m||'';$('#p_a').value=p.a||'';$('#p_s').value=p.site||'';$('#p_i').value=p.ind||'';$('#p_b').value=p.brief||'';oldv()}
+$('#oa').onclick=()=>{const t=$('#ob').value;if(!t.trim())return;addOld(t);$('#ob').value=''};
+$('#of').onchange=e=>{const f=e.target.files[0];if(f)f.text().then(addOld)};
+$('#oc').onclick=()=>{if(confirm('Clear the old plan for this client?')){cur().old=[];save();oldv();tbl()}};
+$('#tsv').onclick=()=>{if(!plan.length)return alert('Generate a plan first');const t=['Week\tTopic\tKeyword\tIntent\tFormat\tCluster\tLang'].concat(plan.map(x=>[x.wk,x.topic,x.kw,INT[x.intent],x.format,x.cluster,x.lang].join('\t'))).join('\n');
+ navigator.clipboard.writeText(t).then(()=>alert('Copied. Paste into Google Sheets.')).catch(()=>dl('plan.tsv',t,'text/tab-separated-values'))};
+// ---- modal + AI market analysis (needs the 'sample' capability) ----
+function anHtml(x){const a=x.an;if(!a)return'';return `<div class="card" dir="auto"><b>${esc(a.title)}</b><p>${esc(a.direction)}</p><p><b>Target audience:</b> ${esc(a.audience)}<br><b>Target market:</b> ${esc(a.market)}</p><p><b>Market analysis:</b> ${esc(a.analysis)}</p><p><b>Gap to exploit:</b> ${esc(a.gap)}</p><b>Heading structure</b><ul>${(a.headings||[]).map(h=>`<li><b>H2:</b> ${esc(h.h2)}${h.h3&&h.h3.length?'<ul>'+h.h3.map(t=>`<li>H3: ${esc(t)}</li>`).join('')+'</ul>':''}</li>`).join('')}</ul><div class="mu">AI estimate from general knowledge, not live data. Verify demand with a keyword tool.</div></div>`}
+async function analyze(id,quiet){let sm=null;try{sm=CLOUD?{cloud:1}:window.claude?await claude.use('sample'):null}catch(e){}
+ if(!sm){if(!quiet)alert('AI analysis only works when this page is opened from claude.ai.');return 0}
+ const x=plan.find(y=>y.id==id),c=cur(),p=c.p||{},el=$('#an-'+id);el.innerHTML='<span class="mu">Analyzing…</span>';
+ const old=(c.old||[]).slice(0,60).map(o=>o.t).join(' | ')||'none',oth=plan.filter(y=>y.id!=id).map(y=>y.topic).join(' | ');
+ try{const a=CLOUD?await aiCall('analyze',{client_id:c.id,idea:{topic:x.topic,kw:x.kw,intent:INT[x.intent],format:x.format,lang:x.lang},old,oth}):await sm.json(`You are a senior SEO content strategist. Client: ${S.cur}. Website: ${p.site||'n/a'}. Industry: ${p.ind||'n/a'}. Brief: ${p.brief||'n/a'}. Target market: ${p.m||'n/a'}. Target audience: ${p.a||'n/a'}.
+Blog idea: "${x.topic}". Primary keyword: "${x.kw}". Search intent: ${INT[x.intent]}. Format: ${x.format}. Language: ${x.lang=='AR'?'Arabic (write every field in Arabic)':'English'}.
+Old content titles (do NOT repeat or closely overlap): ${old}. Other titles in this month's plan (stay distinct): ${oth}.
+Analyze the market for this topic using general knowledge for the client's market. Do not invent statistics or volumes. Return ONLY JSON: {"title":"improved idea title","direction":"2-3 sentences on angle and approach","audience":"who it targets and their need","market":"geographic and segment target","analysis":"demand, competition type, what usually ranks, seasonality","gap":"what current content misses and how this piece can win","headings":[{"h2":"...","h3":["...","..."]}]} with 5-7 H2s matching the format.`);
+  x.an=a;const i=c.i.find(y=>y.id==id);if(i)i.an=a;save();planSave();el.innerHTML=anHtml(x);return 1}
+ catch(e){el.innerHTML='<span class="wr">Analysis failed: '+esc(e.message||e.code||'error')+'</span>';return e.code=='not_granted'?-1:0}}
+$('#aa').onclick=async()=>{if(!plan.length)return alert('Generate a plan first');for(const x of plan){if(x.an)continue;const r=await analyze(x.id,1);if(r===-1||r===0&&!window.claude)break}};
+// ---- clients list, import, pin/swap, brief optimization ----
+function cls(){const q=($('#cs').value||'').toLowerCase();$('#cll').innerHTML=Object.keys(S.c).filter(n=>n.toLowerCase().includes(q)).map(n=>`<button class="cb ${n==S.cur?'on':''}" data-c="${esc(n)}" dir="auto">${esc(n)}<br><span class="mu">${esc((S.c[n].p||{}).ind||'')}</span></button>`).join('')||'<div class="mu">No match</div>';
+ $('#cll').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>openClient(b.dataset.c))}
+$('#cs').oninput=cls;
+$('#p_n').onchange=()=>{const n=$('#p_n').value.trim();if(!n||S.c[n]){$('#p_n').value=S.cur;return}S.c[n]=S.c[S.cur];delete S.c[S.cur];S.cur=n;save();cls()};
+$('#dc').onclick=async()=>{if(CLOUD&&ME.role!='admin')return alert('Only the admin can delete clients.');if(!CLOUD&&Object.keys(S.c).length<2)return alert('Keep at least one client');if(!confirm('Delete '+S.cur+' and all its data?'))return;const c=S.c[S.cur];if(CLOUD&&c.id){const r=await sb.from('clients').delete().eq('id',c.id);if(r.error)return alert(r.error.message)}delete S.c[S.cur];S.cur=Object.keys(S.c)[0]||'';save();plan=[];if(S.cur){renderAll();prof()}else showView('c');cgrid()};
+function impCSV(t){const r=parse(t);if(!r.length)return;const h=r[0].map(v=>v.toLowerCase()),hd=h.some(v=>/keyword|topic|title|query/.test(v)),f=re=>h.findIndex(v=>re.test(v));
+ const ix=hd?{t:f(/topic|title/),k:f(/keyword/),i:f(/intent|purpose/),f:f(/format/),c:f(/cluster/),l:f(/lang/),v:f(/vol/),d:f(/diff|kd/),p:f(/pos|rank/),s:f(/status/)}:{t:0,k:1};
+ const g=(a,j)=>j>=0&&a[j]!==undefined?a[j]:'';let n=0;
+ (hd?r.slice(1):r).forEach(a=>{const t=g(a,ix.t),k=g(a,ix.k)||t;if(!k)return;if(cur().i.some(y=>y.kw.toLowerCase()==k.toLowerCase()))return;
+  let i=g(a,ix.i).toLowerCase();i=i.startsWith('comm')?'comm':i.startsWith('trans')?'trans':(i.startsWith('nav')||i.startsWith('brand'))?'nav':i.startsWith('info')?'info':detect(k);
+  const fm=FM.find(z=>z==g(a,ix.f).toLowerCase())||'how-to guide',st=ST.find(z=>z==g(a,ix.s).toLowerCase())||'idea',l=g(a,ix.l).toUpperCase()||(isAr(k)?'AR':'EN');
+  cur().i.push(mk(t||k,k,i,fm,g(a,ix.c),l=='AR'?'AR':'EN',g(a,ix.v),g(a,ix.d),g(a,ix.p),st,'CSV import'));n++});save();tbl();alert(n+' ideas imported')}
+function impGSC(t){const r=parse(t);if(r.length<2)return;const h=r[0].map(v=>v.toLowerCase()),f=re=>h.findIndex(v=>re.test(v)),q=f(/quer|keyword/),im=f(/impress/),po=f(/position/);if(q<0)return alert('No Queries column found');
+ let up=0,nw=0;r.slice(1).forEach(a=>{const k=a[q];if(!k)return;const imp=+String(a[im]||0).replace(/,/g,'')||0,pos=po>=0?Math.round(parseFloat(a[po])||0):'',x=cur().i.find(y=>y.kw.toLowerCase()==k.toLowerCase());
+  if(x){if(pos!=='')x.pos=pos;if(!x.vol)x.vol=imp;up++}else if(imp>=10){cur().i.push(mk(k,k,detect(k),'how-to guide','General',isAr(k)?'AR':'EN',imp,30,pos,'idea','GSC'));nw++}});
+ save();tbl();alert(up+' ideas updated, '+nw+' new from GSC. Impressions are used as volume and KD is a placeholder of 30.')}
+$('#bp').onclick=()=>{const t=$('#bk').value;if(t.trim()){impCSV(t);$('#bk').value=''}};
+$('#fc').onchange=e=>{const f=e.target.files[0];if(f)f.text().then(impCSV);e.target.value=''};
+$('#fg').onchange=e=>{const f=e.target.files[0];if(f)f.text().then(impGSC);e.target.value=''};
+function pin(id){const c=cur(),p=c.pins||(c.pins=[]),i=p.indexOf(id);i<0?p.push(id):p.splice(i,1);save();show()}
+function swap(id){const i=plan.findIndex(z=>z.id==id),o=plan[i];if(!o)return;if((cur().pins||[]).includes(id))return alert('Unpin it first');
+ const cand=lastPool.filter(y=>!plan.some(z=>z.id==y.id)&&!dup(y)&&!plan.some(z=>z.id!=id&&sim(z.kw,y.kw)>=.6)).sort((a,b)=>((b.intent==o.intent)-(a.intent==o.intent))||b.s-a.s);
+ if(!cand.length)return alert('No other eligible idea to swap in');plan[i]={...cand[0],wk:o.wk,why:`Swapped in · score ${cand[0].s.toFixed(1)}`};show()}
+function boHtml(x){const b=x.ob;if(!b)return'';const H=(b.headings||[]).map(h=>`<li>${esc(h.h2)}${h.h3&&h.h3.length?'<ul>'+h.h3.map(t=>`<li>${esc(t)}</li>`).join('')+'</ul>':''}</li>`).join('');
+ return `<div class="card" dir="auto"><b>Optimized brief</b><p><b>Title options:</b></p><ol>${(b.titles||[]).map(t=>`<li>${esc(t)}</li>`).join('')}</ol><p><b>Meta description:</b> ${esc(b.meta)}</p><ul>${H}</ul><p><b>Internal links:</b> ${(b.links||[]).map(esc).join('; ')}</p><p><b>FAQ:</b> ${(b.faqs||[]).map(esc).join(' · ')}</p><p><b>CTA:</b> ${esc(b.cta)}</p></div>`}
+async function optimize(id){let sm=null;try{sm=CLOUD?{cloud:1}:window.claude?await claude.use('sample'):null}catch(e){}
+ if(!sm)return alert('AI features only work when this page is opened from claude.ai.');
+ const x=plan.find(y=>y.id==id),c=cur(),p=c.p||{},el=$('#bo-'+id);el.innerHTML='<span class="mu">Optimizing…</span>';
+ const links=c.i.filter(y=>y.cluster==x.cluster&&y.id!=id).slice(0,5).map(y=>y.topic).join(' | ')||'none';
+ try{const b=CLOUD?await aiCall('optimize',{client_id:c.id,idea:{topic:x.topic,kw:x.kw,intent:INT[x.intent],format:x.format,lang:x.lang},outline:OUT[x.format]||[],links,cta:CTA[x.stage],analysis:x.an||null}):await sm.json(`You are a senior SEO editor. Client: ${S.cur} (${p.ind||'n/a'}, ${p.site||'n/a'}). Market: ${p.m||'n/a'}. Audience: ${p.a||'n/a'}. Brief: ${p.brief||'n/a'}.
+Idea: "${x.topic}", keyword "${x.kw}", intent ${INT[x.intent]}, format ${x.format}, language ${x.lang=='AR'?'Arabic (write every field in Arabic)':'English'}.
+Current draft brief: H2s ${(OUT[x.format]||[]).join('; ')}. Internal link candidates: ${links}. CTA: ${CTA[x.stage]}. ${x.an?'Market analysis: '+JSON.stringify(x.an):''}
+Rewrite and improve it. Return ONLY JSON: {"titles":["3 title options"],"meta":"meta description under 155 chars","headings":[{"h2":"...","h3":["..."]}],"links":["anchor text -> target topic"],"faqs":["3-5 questions"],"cta":"specific CTA"}`);
+  x.ob=b;const i=c.i.find(y=>y.id==id);if(i)i.ob=b;save();planSave();el.innerHTML=boHtml(x)}
+ catch(e){el.innerHTML='<span class="wr">Failed: '+esc(e.message||e.code||'error')+'</span>'}}
+// ===== STAGE 3A: login, database sync, Clients page, profile, plan history =====
+async function aiCall(kind,body){const {data,error}=await sb.functions.invoke('ai',{body:{kind,...body}});if(error)throw new Error('AI is not switched on for this site yet. Everything else works normally.');if(data&&data.error)throw new Error(data.error);return data}
+let sb=null,ME=null,curPlanId=null,syncP=null,again=false,tm=null,pt=null;
+const setSv=(t,bad)=>{const e=$('#sv');e.textContent=t;e.className=bad?'wr':'mu'};
+function showView(v){$('#tmv').hidden=v!='t';$('#cpg').hidden=v!='c';document.querySelector('.lay').hidden=v!='w'}
+const rowOf=(n,c)=>{const p=c.p||{};return{name:n,industry:p.ind||null,website:p.site||null,brief:p.brief||null,target_market:p.m||null,target_audience:p.a||null,brand_voice:p.voice||null,products_services:p.prod||null,goals:p.goals||null,notes:p.notes||null,social:p.social||{},brand_colors:p.colors||[],logo_path:p.logo||null,quotas:c.q,pins:c.pins||[]}};
+const toRow=(x,cid)=>({id:x.id,client_id:cid,topic:x.topic,kw:x.kw,secondary_kw:x.sec||null,intent:x.intent,stage:x.stage||null,cluster:x.cluster||'General',format:x.format,lang:x.lang,vol:+x.vol||0,kd:+x.kd||0,pos:x.pos===''||x.pos==null?null:+x.pos,url:x.url||null,status:x.status,source:x.src||null,analysis:x.an||null,optimized:x.ob||null});
+const fromIdea=r=>({id:r.id,topic:r.topic,kw:r.kw,sec:r.secondary_kw||'',intent:r.intent,stage:r.stage||stage(r.intent),cluster:r.cluster,format:r.format,lang:r.lang,vol:r.vol,kd:r.kd,pos:r.pos==null?'':r.pos,url:r.url||'',status:r.status,src:r.source||'',an:r.analysis||undefined,ob:r.optimized||undefined});
+function fromRow(r){const c={id:r.id,i:[],old:[],hist:[],q:r.quotas,pins:r.pins||[],p:{ind:r.industry||'',site:r.website||'',brief:r.brief||'',m:r.target_market||'',a:r.target_audience||'',voice:r.brand_voice||'',prod:r.products_services||'',goals:r.goals||'',notes:r.notes||'',social:r.social||{},colors:r.brand_colors||[],logo:r.logo_path||''},_loaded:0};return c}
+async function allRows(t,cid){let o=[],k=0;for(;;){const r=await sb.from(t).select('*').eq('client_id',cid).range(k,k+999);if(r.error)throw r.error;o=o.concat(r.data);if(r.data.length<1000)return o;k+=1000}}
+async function loadClient(n){const c=S.c[n];if(!CLOUD||!c||c._loaded)return;
+ const [ideas,past,h]=await Promise.all([allRows('ideas',c.id),allRows('past_content',c.id),sb.from('plan_items').select('plan_id,topic,kw,plans!inner(month)').eq('client_id',c.id).limit(3000)]);
+ c.i=ideas.map(fromIdea);c.old=past.map(r=>({t:r.title,k:r.keyword||r.title,u:r.url||''}));
+ c.hist=(h.data||[]).map(r=>({t:r.topic,k:r.kw||r.topic,m:r.plans&&r.plans.month,p:r.plan_id}));
+ c._si=new Map(c.i.map(x=>[x.id,JSON.stringify(toRow(x,c.id))]));c._so=new Set(c.old.map(o=>o.t));c._loaded=1}
+async function openClient(n){try{setSv('Loading…');await loadClient(n);setSv('');S.cur=n;plan=[];curPlanId=null;renderAll();prof();showView('w');document.querySelector('.tabs button').click()}catch(e){setSv('Could not load: '+(e.message||e),1)}}
+// --- saving (automatic, a moment after each change) ---
+function queueSync(){setSv('Saving…');clearTimeout(tm);tm=setTimeout(()=>syncAll(),900)}
+async function syncAll(){if(syncP){again=true;return syncP}
+ syncP=(async()=>{try{for(const n of Object.keys(S.c))await push(n,S.c[n]);setSv('All changes saved')}catch(e){setSv('Save failed: '+(e.message||e)+' (changes are kept on screen, try again)',1)}})();
+ await syncP;syncP=null;if(again){again=false;return syncAll()}}
+async function push(n,c){const row=rowOf(n,c),js=JSON.stringify(row);
+ if(!c.id){c.id=uid();const r=await sb.from('clients').insert({id:c.id,...row});if(r.error){c.id=null;throw r.error}c._m=js}
+ else if(c._m!==js){const r=await sb.from('clients').update(row).eq('id',c.id);if(r.error)throw r.error;c._m=js}
+ if(!c._loaded)return;
+ const cur=new Map(c.i.map(x=>[x.id,JSON.stringify(toRow(x,c.id))])),sn=c._si||new Map();
+ const up=[...cur].filter(([id,j])=>sn.get(id)!==j).map(([,j])=>JSON.parse(j)),del=[...sn.keys()].filter(id=>!cur.has(id));
+ for(let k=0;k<up.length;k+=200){const r=await sb.from('ideas').upsert(up.slice(k,k+200));if(r.error)throw r.error}
+ if(del.length){const r=await sb.from('ideas').delete().in('id',del);if(r.error)throw r.error}
+ c._si=cur;
+ const so=c._so||new Set(),now=new Set(c.old.map(o=>o.t)),add=c.old.filter(o=>!so.has(o.t)).map(o=>({client_id:c.id,title:o.t,keyword:o.k||null,url:o.u||null,source:'paste/import'}));
+ for(let k=0;k<add.length;k+=200){const r=await sb.from('past_content').upsert(add.slice(k,k+200),{onConflict:'client_id,title'});if(r.error)throw r.error}
+ const gone=[...so].filter(t=>!now.has(t));
+ if(gone.length){if(!now.size){const r=await sb.from('past_content').delete().eq('client_id',c.id);if(r.error)throw r.error}else for(const t of gone){const r=await sb.from('past_content').delete().eq('client_id',c.id).eq('title',t);if(r.error)throw r.error}}
+ c._so=now}
+// --- login ---
+function showLogin(m){$('#login').hidden=false;if(m)$('#lm').textContent=m}
+async function boot(){sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+ const h=new URLSearchParams(location.hash.slice(1)+'&'+location.search.slice(1)),err=h.get('error_description');
+ const {data}=await sb.auth.getSession();
+ if(!data.session){showLogin(err?(/database|invite/i.test(err)?'This email has not been invited. Ask the admin to invite you.':err.replace(/\+/g,' ')):'');return}
+ await start(data.session)}
+$('#gl').onclick=()=>sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+async function start(se){const m=await sb.from('profiles').select('*').eq('id',se.user.id).single();
+ if(m.error||!m.data||!m.data.active){await sb.auth.signOut();return showLogin('Your account is not active. Ask the admin.')}
+ ME=m.data;$('#tmb').hidden=ME.role!='admin';$('#who').textContent=ME.email+' · '+ME.role;$('#lo').hidden=false;$('#login').hidden=true;
+ const [cl,ov]=await Promise.all([sb.from('clients').select('*').order('name'),sb.from('client_overview').select('id,idea_count,plan_count,past_count')]);
+ if(cl.error)return setSv('Could not load clients: '+cl.error.message,1);
+ const nm={};(ov.data||[]).forEach(r=>nm[r.id]={i:r.idea_count,p:r.plan_count,o:r.past_count});
+ S.c={};cl.data.forEach(r=>{let k=r.name;while(S.c[k])k+=' ('+r.id.slice(0,4)+')';const c=fromRow(r);c._m=JSON.stringify(rowOf(k,c));c._n=nm[r.id]||{i:0,p:0,o:0};S.c[k]=c});
+ showView('c');cgrid()}
+$('#lo').onclick=async()=>{await sb.auth.signOut();location.reload()};
+// --- Clients page ---
+function cgrid(){const q=($('#cq').value||'').toLowerCase(),f=$('#cf').value,N=Object.keys(S.c);
+ const ind=[...new Set(N.map(n=>(S.c[n].p||{}).ind).filter(Boolean))].sort();$('#cf').innerHTML='<option value="">All industries</option>'+ind.map(i=>`<option ${i==f?'selected':''}>${esc(i)}</option>`).join('');
+ const a=N.filter(n=>{const p=S.c[n].p||{};return(!q||(n+(p.ind||'')+(p.site||'')).toLowerCase().includes(q))&&(!f||p.ind==f)});
+ $('#cgrid').innerHTML=a.map(n=>{const c=S.c[n],p=c.p||{},k=c._n||{i:0,p:0,o:0},I=c._loaded?c.i.length:k.i,O=c._loaded?c.old.length:k.o;
+  return `<div class="card cc" data-c="${esc(n)}" style="cursor:pointer" dir="auto"><b>${esc(n)}</b><div class="mu">${esc(p.ind||'No industry yet')}</div><div class="mu">${esc(p.site||'')}</div><div style="margin-top:6px"><span class="tag">${I} ideas</span> <span class="tag">${k.p} plans</span> <span class="tag">${O} past</span></div></div>`}).join('')||'<div class="card mu">No clients to show.</div>';
+ $('#cgrid').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>openClient(b.dataset.c))}
+$('#cq').oninput=cgrid;$('#cf').onchange=cgrid;$('#vc').onclick=()=>{cgrid();showView('c')};$('#cn2').onclick=()=>$('#nc').click();
+// --- one-time import of old JSON backups ---
+function legacy(d){let n=0;Object.entries(d.c).forEach(([nm,cl])=>{let k=nm;while(S.c[k])k+=' (imported)';const m={};const ids=(cl.i||[]).map(x=>{const id=uid();m[x.id]=id;return{...x,id}});
+ S.c[k]={i:ids,q:cl.q||{info:40,comm:30,trans:20,nav:10},p:cl.p||{},old:cl.old||[],hist:[],pins:(cl.pins||[]).map(i=>m[i]).filter(Boolean),_loaded:1,_n:{i:ids.length,p:0,o:(cl.old||[]).length}};n++});save();cgrid();alert(n+' client(s) imported. They are now saving to the database.')}
+// --- profile tab ---
+const parseSo=t=>{const o={};t.split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{const m=l.match(/^([^:\/]+):\s*(\S.*)$/);if(m&&!/^https?$/i.test(m[1]))o[m[1].trim()]=m[2].trim();else o[l]=l});return o};
+const fmtSo=o=>Object.entries(o||{}).map(([k,v])=>k==v?k:k+': '+v).join('\n');
+function pfFill(p){$('#p_v').value=p.voice||'';$('#p_pr').value=p.prod||'';$('#p_g').value=p.goals||'';$('#p_nt').value=p.notes||'';$('#p_so').value=fmtSo(p.social);$('#p_co').value=(p.colors||[]).join(', ');sws(p)}
+const sws=p=>$('#sws').innerHTML=(p.colors||[]).map(c=>`<span class="sw" style="background:${esc(c)}" title="${esc(c)}"></span>`).join(' ');
+const pm={p_v:'voice',p_pr:'prod',p_g:'goals',p_nt:'notes'};
+Object.keys(pm).forEach(id=>$('#'+id).oninput=()=>{const p=cur().p||(cur().p={});p[pm[id]]=$('#'+id).value;save()});
+$('#p_so').oninput=()=>{const p=cur().p||(cur().p={});p.social=parseSo($('#p_so').value);save()};
+$('#p_co').oninput=()=>{const p=cur().p||(cur().p={});p.colors=$('#p_co').value.split(',').map(s=>s.trim()).filter(Boolean);save();sws(p)};
+async function ensureId(){const c=cur();if(!c.id){clearTimeout(tm);await syncAll()}return c.id}
+async function pfLoad(){const loc='<span class="mu">Available in the live (database) version.</span>';
+ if(!CLOUD){$('#fl').innerHTML=loc;$('#kl').innerHTML=loc;return}
+ const id=await ensureId();if(!id)return;const [f,k]=await Promise.all([sb.from('files').select('*').eq('client_id',id).order('created_at'),sb.from('kpis').select('*').eq('client_id',id).order('created_at')]);
+ let h='';for(const x of f.data||[]){const u=await sb.storage.from('client-files').createSignedUrl(x.storage_path,3600);
+  h+=`<div class="row" style="margin:4px 0">${x.kind=='logo'?`<img src="${esc(u.data&&u.data.signedUrl)}" alt="" style="height:36px">`:''}<a href="${esc(u.data&&u.data.signedUrl)}" target="_blank" rel="noopener">${esc(x.name)}</a><span class="tag">${x.kind}</span><button data-df="${x.id}" data-sp="${esc(x.storage_path)}">Delete</button></div>`}
+ $('#fl').innerHTML=h||'<span class="mu">No files yet.</span>';
+ $('#fl').querySelectorAll('[data-df]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this file?'))return;await sb.storage.from('client-files').remove([b.dataset.sp]);await sb.from('files').delete().eq('id',b.dataset.df);pfLoad()});
+ $('#kl').innerHTML=(k.data||[]).map(r=>`<div class="row" style="margin:4px 0" data-k="${r.id}">${['name','target','current','period'].map(f=>`<input data-f="${f}" value="${esc(r[f])}" placeholder="${f}" dir="auto">`).join('')}<button data-dk="${r.id}">✕</button></div>`).join('')||'<span class="mu">No KPIs. They are optional.</span>';
+ $('#kl').querySelectorAll('[data-k] input').forEach(i=>i.onchange=async()=>{await sb.from('kpis').update({[i.dataset.f]:i.value}).eq('id',i.closest('[data-k]').dataset.k)});
+ $('#kl').querySelectorAll('[data-dk]').forEach(b=>b.onclick=async()=>{await sb.from('kpis').delete().eq('id',b.dataset.dk);pfLoad()})}
+$('#ka').onclick=async()=>{if(!CLOUD)return alert('KPIs are saved in the live (database) version.');const id=await ensureId();await sb.from('kpis').insert({client_id:id,name:'New KPI'});pfLoad()};
+async function upl(inp,kind){if(!CLOUD)return alert('File upload works in the live (database) version.');const id=await ensureId();
+ for(const f of inp.files){const path=id+'/'+uid()+'-'+f.name.replace(/[^A-Za-z0-9._-]/g,'_');const u=await sb.storage.from('client-files').upload(path,f);if(u.error){alert(u.error.message);continue}
+  await sb.from('files').insert({client_id:id,kind,name:f.name,storage_path:path,mime:f.type,size_bytes:f.size});if(kind=='logo'){(cur().p||(cur().p={})).logo=path;save()}}
+ inp.value='';pfLoad()}
+$('#lfi').onchange=e=>upl(e.target,'logo');$('#afi').onchange=e=>upl(e.target,'attachment');
+$('#aw').onclick=async()=>{const p=cur().p||{};if(!CLOUD)return alert('Auto-fill uses the secure AI server of the live version.');if(!p.site)return alert('Add the website in the client profile first.');
+ $('#awo').innerHTML='<span class="mu">Reading the website…</span>';
+ try{const data=await aiCall('autofill',{url:p.site,client_id:await ensureId()});
+  const F={industry:'Industry',brief:'Brief overview',market:'Target market',audience:'Target audience',voice:'Brand voice'};
+  $('#awo').innerHTML='<div class="card"><b>AI suggestions: review and edit, nothing is saved until you click Apply</b>'+Object.entries(F).map(([k,l])=>`<div style="margin-top:6px"><label class="mu">${l}</label><textarea data-s="${k}" rows="2" style="width:100%" dir="auto">${esc(data[k]||'')}</textarea></div>`).join('')+'<div class="row" style="margin-top:6px"><button class="p" id="aok">Apply to profile</button><button id="ano">Discard</button></div></div>';
+  $('#ano').onclick=()=>$('#awo').innerHTML='';
+  $('#aok').onclick=()=>{const v=k=>$('#awo [data-s='+k+']').value.trim();const q=cur().p||(cur().p={});if(v('industry'))q.ind=v('industry');if(v('brief'))q.brief=v('brief');if(v('market'))q.m=v('market');if(v('audience'))q.a=v('audience');if(v('voice'))q.voice=v('voice');save();prof();$('#awo').innerHTML='<span class="mu">Applied and saved.</span>'}}
+ catch(e){$('#awo').innerHTML='<span class="wr">Auto-fill failed: '+esc(e.message||'error')+'</span>'}};
+// --- saved plan history ---
+function planSave(isNew){if(!CLOUD)return;if(isNew)curPlanId=null;clearTimeout(pt);pt=setTimeout(async()=>{try{if(!plan.length)return;const c=cur();await ensureId();await syncAll();const mo=$('#mo').value||new Date().toISOString().slice(0,7);
+  if(!curPlanId){curPlanId=uid();const r=await sb.from('plans').insert({id:curPlanId,client_id:c.id,month:mo,name:S.cur+' '+mo,params:{n:+$('#n').value,r:+$('#r').value,lg:$('#lg').value,q:c.q}});if(r.error){curPlanId=null;throw r.error}}
+  const d=await sb.from('plan_items').delete().eq('plan_id',curPlanId);if(d.error)throw d.error;
+  const U=/^[0-9a-f-]{36}$/,r2=await sb.from('plan_items').insert(plan.map((x,i)=>({plan_id:curPlanId,client_id:c.id,idea_id:U.test(x.id)?x.id:null,week:x.wk,sort_order:i,topic:x.topic,kw:x.kw,intent:x.intent,format:x.format,cluster:x.cluster,lang:x.lang,why:x.why||null,refresh:!!x.refresh,pinned:(c.pins||[]).includes(x.id),analysis:x.an||null,optimized:x.ob||null})));
+  if(r2.error)throw r2.error;const pid=curPlanId;c.hist=(c.hist||[]).filter(h=>h.p!=pid).concat(plan.map(x=>({t:x.topic,k:x.kw||x.topic,m:mo,p:pid})));setSv('Plan saved to history')}catch(e){setSv('Plan save failed: '+(e.message||e),1)}},700)}
+{const g=gen;gen=function(){g();planSave(true)};const w=swap;swap=function(i){w(i);planSave()};const n=pin;pin=function(i){n(i);planSave()}}
+async function hsLoad(){if(!CLOUD){$('#hl').innerHTML='<span class="mu">Plan history is saved in the live (database) version.</span>';return}
+ const id=await ensureId();const r=await sb.from('plans').select('id,month,name,created_at,params,plan_items(count)').eq('client_id',id).order('created_at',{ascending:false});
+ $('#hl').innerHTML=(r.data||[]).map(p=>`<div class="row" style="margin:4px 0"><b>${esc(p.month)}</b><span class="mu">${new Date(p.created_at).toLocaleString()}</span><span class="tag">${(p.plan_items&&p.plan_items[0]&&p.plan_items[0].count)||0} items</span><button data-o="${p.id}">Open</button><button data-d="${p.id}">Duplicate</button><button data-x="${p.id}">CSV</button></div>`).join('')||'<span class="mu">No saved plans yet. Generate one in Monthly plan.</span>';
+ const L=async pid=>(await sb.from('plan_items').select('*').eq('plan_id',pid).order('sort_order')).data||[];
+ $('#hl').querySelectorAll('[data-o]').forEach(b=>b.onclick=async()=>{const c=cur(),it=await L(b.dataset.o),p=(r.data||[]).find(z=>z.id==b.dataset.o);
+  plan=it.map(x=>{const i=c.i.find(y=>y.id==x.idea_id)||{};return{id:x.idea_id||'h'+x.id,topic:x.topic,kw:x.kw,intent:x.intent,format:x.format,cluster:x.cluster,lang:x.lang,why:x.why,refresh:x.refresh,wk:x.week,an:x.analysis||undefined,ob:x.optimized||undefined,stage:stage(x.intent),vol:i.vol||0,kd:i.kd||0}});
+  curPlanId=b.dataset.o;if(p)$('#mo').value=p.month;document.querySelector('[data-t=b]').click()});
+ $('#hl').querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{const it=await L(b.dataset.d),p=(r.data||[]).find(z=>z.id==b.dataset.d),nid=uid();
+  const a=await sb.from('plans').insert({id:nid,client_id:id,month:p.month,name:(p.name||'')+' (copy)',params:p.params});if(a.error)return alert(a.error.message);
+  await sb.from('plan_items').insert(it.map(({id:_,plan_id:__,created_at:___,...x})=>({...x,plan_id:nid})));hsLoad()});
+ $('#hl').querySelectorAll('[data-x]').forEach(b=>b.onclick=async()=>{const it=await L(b.dataset.x),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  dl('plan-history.csv','\ufeff'+['week,topic,keyword,intent,format,cluster,lang,why'].concat(it.map(x=>[x.week,x.topic,x.kw,INT[x.intent]||x.intent,x.format,x.cluster,x.lang,x.why].map(q).join(','))).join('\n'),'text/csv')})}
+// ===== STAGE 3B: competitors, team page, EN/AR =====
+const caShow=(a,t)=>$('#cao').innerHTML=a?`<div class="card" dir="auto"><b>Latest AI analysis</b> <span class="mu">${t?new Date(t).toLocaleDateString():''}</span><p>${esc(a.summary)}</p><b>Content gaps</b><ul>${(a.gaps||[]).map(g=>`<li>${esc(g)}</li>`).join('')}</ul><b>Opportunities</b><ul>${(a.opportunities||[]).map(g=>`<li>${esc(g)}</li>`).join('')}</ul></div>`:'';
+async function cpLoad(){if(!CLOUD){$('#cpl').innerHTML='<div class="card mu">Competitors are saved in the live (database) version.</div>';return}
+ const id=await ensureId();const [r,c]=await Promise.all([sb.from('competitors').select('*').eq('client_id',id).order('priority',{ascending:false}).order('name'),sb.from('clients').select('competitor_analysis,competitor_analysis_at').eq('id',id).single()]);
+ $('#cpl').innerHTML=(r.data||[]).map(x=>`<div class="card" data-cp="${x.id}" dir="auto"><div class="row"><input data-f="name" value="${esc(x.name)}"><input data-f="website" value="${esc(x.website)}" placeholder="Website"><label><input type="checkbox" data-f="priority" ${x.priority?'checked':''}> ⭐ Priority</label><button data-dc="${x.id}">Delete</button></div>`+[['content_focus','Content focus'],['strengths','Strengths'],['weaknesses','Weaknesses'],['notes','Notes']].map(([f,l])=>`<textarea data-f="${f}" rows="2" placeholder="${l}" style="width:100%;margin-top:6px">${esc(x[f])}</textarea>`).join('')+`<textarea data-f="social" rows="2" placeholder="Social links, one per line" style="width:100%;margin-top:6px">${esc(fmtSo(x.social))}</textarea></div>`).join('')||'<div class="card mu">No competitors yet.</div>';
+ $('#cpl').querySelectorAll('[data-f]').forEach(e=>e.onchange=async()=>{const k=e.dataset.f,v=e.type=='checkbox'?e.checked:k=='social'?parseSo(e.value):e.value,x=await sb.from('competitors').update({[k]:v}).eq('id',e.closest('[data-cp]').dataset.cp);if(x.error)alert(x.error.message);else if(k=='priority')cpLoad()});
+ $('#cpl').querySelectorAll('[data-dc]').forEach(b=>b.onclick=async()=>{if(confirm('Delete this competitor?')){await sb.from('competitors').delete().eq('id',b.dataset.dc);cpLoad()}});
+ caShow(c.data&&c.data.competitor_analysis,c.data&&c.data.competitor_analysis_at)}
+$('#cadd').onclick=async()=>{if(!CLOUD)return alert('Competitors are saved in the live (database) version.');const n=$('#c_n').value.trim();if(!n)return alert('Enter the competitor name');
+ const r=await sb.from('competitors').insert({client_id:await ensureId(),name:n,website:$('#c_w').value.trim()||null});if(r.error)return alert(r.error.message);$('#c_n').value='';$('#c_w').value='';cpLoad()};
+$('#ca').onclick=async()=>{if(!CLOUD)return alert('This uses the secure AI server of the live version.');const id=await ensureId();$('#cao').innerHTML='<span class="mu">Analyzing competitors…</span>';
+ try{const data=await aiCall('competitors',{client_id:id});const at=new Date().toISOString();
+  const u=await sb.from('clients').update({competitor_analysis:data,competitor_analysis_at:at}).eq('id',id);if(u.error)throw u.error;caShow(data,at)}
+ catch(e){$('#cao').innerHTML='<span class="wr">Analysis failed: '+esc(e.message||'error')+'</span>'}};
+// --- Team (admin) ---
+async function tmLoad(){const [p,i,m]=await Promise.all([sb.from('profiles').select('*').order('email'),sb.from('invites').select('*').order('created_at'),sb.from('client_members').select('client_id,user_id')]);
+ const mem=new Set((m.data||[]).map(r=>r.client_id+'|'+r.user_id)),CL=Object.entries(S.c).filter(([,c])=>c.id);
+ $('#til').innerHTML=(i.data||[]).map(r=>`<div class="row" style="margin:3px 0"><span>${esc(r.email)}</span><span class="tag">${r.role}</span><span class="mu">${r.accepted_at?'joined':'waiting'}</span><button data-ri="${r.id}">Remove</button></div>`).join('')||'<span class="mu">No invites yet.</span>';
+ $('#tpl').innerHTML=(p.data||[]).map(u=>`<div style="border-bottom:1px solid var(--bd);padding:6px 0"><div class="row"><b>${esc(u.email)}</b><select data-ur="${u.id}">${opt(['editor','admin'],u.role)}</select><label><input type="checkbox" data-ua="${u.id}" ${u.active?'checked':''}> active</label></div>${u.role=='editor'?`<details><summary>Assigned clients</summary>${CL.map(([n,c])=>`<label style="display:block"><input type="checkbox" data-mc="${c.id}" data-mu="${u.id}" ${mem.has(c.id+'|'+u.id)?'checked':''}> ${esc(n)}</label>`).join('')||'<span class="mu">No clients yet</span>'}</details>`:'<span class="mu">Admins see all clients</span>'}</div>`).join('');
+ const T=$('#tmv');T.querySelectorAll('[data-ri]').forEach(b=>b.onclick=async()=>{await sb.from('invites').delete().eq('id',b.dataset.ri);tmLoad()});
+ T.querySelectorAll('[data-ur]').forEach(e=>e.onchange=async()=>{if(e.dataset.ur==ME.id){alert('You cannot change your own role.');return tmLoad()}const r=await sb.from('profiles').update({role:e.value}).eq('id',e.dataset.ur);if(r.error)alert(r.error.message);tmLoad()});
+ T.querySelectorAll('[data-ua]').forEach(e=>e.onchange=async()=>{if(e.dataset.ua==ME.id){alert('You cannot deactivate yourself.');return tmLoad()}const r=await sb.from('profiles').update({active:e.checked}).eq('id',e.dataset.ua);if(r.error)alert(r.error.message)});
+ T.querySelectorAll('[data-mc]').forEach(e=>e.onchange=async()=>{const k={client_id:e.dataset.mc,user_id:e.dataset.mu},r=e.checked?await sb.from('client_members').insert(k):await sb.from('client_members').delete().eq('client_id',k.client_id).eq('user_id',k.user_id);if(r.error){alert(r.error.message);tmLoad()}})}
+$('#tmb').onclick=()=>{showView('t');tmLoad()};
+$('#ia').onclick=async()=>{const e=$('#ie').value.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e))return alert('Enter a valid email');const r=await sb.from('invites').insert({email:e,role:$('#ir').value,invited_by:ME.id});if(r.error)return alert(/duplicate|unique/i.test(r.error.message)?'That email is already invited.':r.error.message);$('#ie').value='';tmLoad()};
+$('#tcl').onclick=()=>{const u=location.origin+location.pathname;navigator.clipboard.writeText(u).then(()=>alert('Link copied. Send it with the invited Google email.')).catch(()=>prompt('Copy this link:',u))};
+// --- EN / AR ---
+const AR={'Clients':'العملاء','+ New client':'+ عميل جديد','+ New':'+ جديد','Search clients…':'ابحث عن عميل…','All industries':'كل الصناعات','Client profile':'ملف العميل','Client name':'اسم العميل','Industry':'الصناعة','Website':'الموقع الإلكتروني','Brief overview':'نبذة عن العميل','Target market (e.g. Egypt, Gulf)':'السوق المستهدف (مثل مصر، الخليج)','Target audience':'الجمهور المستهدف','Delete client':'حذف العميل','Idea bank':'بنك الأفكار','Monthly plan':'الخطة الشهرية','Dashboard':'لوحة المتابعة','Profile':'ملف العميل التفصيلي','Plan history':'سجل الخطط','Competitors':'المنافسون','Team':'الفريق','Add idea':'إضافة فكرة','Topic / title':'الموضوع / العنوان','Primary keyword':'الكلمة المفتاحية الرئيسية','Cluster':'المجموعة','Vol':'الحجم','KD':'الصعوبة','Pos':'الترتيب','Bulk paste':'لصق جماعي','Import':'استيراد','Search…':'بحث…','All intents':'كل الأهداف','All statuses':'كل الحالات','Topic':'الموضوع','Keyword':'الكلمة المفتاحية','Intent':'الهدف','Format':'الشكل','Lang':'اللغة','Language':'اللغة','Status':'الحالة','Informational':'معلوماتي','Commercial':'تجاري','Transactional':'شرائي','Brand':'العلامة التجارية','Generate plan':'إنشاء الخطة','Export CSV':'تصدير CSV','Copy for Google Sheets':'نسخ إلى Google Sheets','Print':'طباعة','Analyze all with AI':'تحليل الكل بالذكاء الاصطناعي','Past content plans (Google Sheets)':'خطط المحتوى السابقة (Google Sheets)','Add to old plan':'إضافة إلى الخطة السابقة','Clear old plan':'مسح الخطة السابقة','Export JSON':'تصدير JSON','Import JSON':'استيراد JSON','Sign out':'تسجيل الخروج','Sign in with Google':'تسجيل الدخول عبر Google','Saved plans':'الخطط المحفوظة','Open':'فتح','Duplicate':'نسخ','Delete':'حذف','Remove':'إزالة','Add keywords':'إضافة كلمات','Posts':'عدد المقالات','Month':'الشهر','Refresh slots':'خانات التحديث','Intent quota %:':'نسب الأهداف %:','Analyze market (AI)':'تحليل السوق (ذكاء اصطناعي)','Optimize brief (AI)':'تحسين الملخص (ذكاء اصطناعي)','Unpin':'إلغاء التثبيت','📌 Pin':'📌 تثبيت','↔ Swap':'↔ استبدال','Brand voice and tone':'نبرة وصوت العلامة','Products / services':'المنتجات / الخدمات','Goals':'الأهداف','Notes':'ملاحظات','More profile details':'تفاصيل إضافية','Auto-fill from website (AI)':'تعبئة تلقائية من الموقع (ذكاء اصطناعي)','Logo and attachments':'الشعار والمرفقات','KPIs':'مؤشرات الأداء','optional':'اختياري','+ Add KPI':'+ إضافة مؤشر','Old plan overlap':'تداخل مع الخطة السابقة','Competitor name':'اسم المنافس','+ Add competitor':'+ إضافة منافس','Analyze competitors with AI':'تحليل المنافسين بالذكاء الاصطناعي','⭐ Priority':'⭐ أولوية','Content focus':'محور المحتوى','Strengths':'نقاط القوة','Weaknesses':'نقاط الضعف','Invite':'دعوة','Invites':'الدعوات','People':'الأعضاء','Copy invite link':'نسخ رابط الدعوة','Assigned clients':'العملاء المعيّنون','active':'نشط','Editor':'محرر','Admin':'مدير'};
+let LANG='en';try{LANG=localStorage.getItem('cp_lang')||'en'}catch(e){}
+const tn=new Map(),ta=new Map();let raf=0;
+function trs(s){const t=s.trim();if(!t)return null;let m=AR[t];if(!m){let r=t.match(/^(\d+) (ideas|plans|past)$/);if(r)m=r[1]+' '+{ideas:'أفكار',plans:'خطط',past:'سابقة'}[r[2]];else if(r=t.match(/^Week (\d)$/))m='الأسبوع '+r[1]}return m?s.replace(t,m):null}
+function applyLang(){const ar=LANG=='ar';document.documentElement.dir=ar?'rtl':'ltr';document.documentElement.lang=ar?'ar':'en';
+ if(!ar){tn.forEach((o,n)=>n.nodeValue=o);ta.forEach((o,e)=>Object.entries(o).forEach(([a,v])=>e.setAttribute(a,v)));tn.clear();ta.clear();return}
+ document.querySelectorAll('option:not([value])').forEach(o=>o.setAttribute('value',o.textContent));
+ const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;
+ while(n=w.nextNode()){const e=n.parentElement;if(!e||/^(SCRIPT|STYLE|TEXTAREA)$/.test(e.tagName)||e.closest('#lgb')||tn.has(n))continue;const r=trs(n.nodeValue);if(r){tn.set(n,n.nodeValue);n.nodeValue=r}}
+ document.querySelectorAll('[placeholder],[title]').forEach(e=>['placeholder','title'].forEach(a=>{const v=e.getAttribute(a);if(!v)return;const r=trs(v);if(r&&!(ta.get(e)||{})[a]){(ta.get(e)||ta.set(e,{}).get(e))[a]=v;e.setAttribute(a,r)}}));
+ if(tn.size>3000)for(const k of [...tn.keys()])if(!k.isConnected)tn.delete(k)}
+new MutationObserver(()=>{if(LANG=='ar'){cancelAnimationFrame(raf);raf=requestAnimationFrame(applyLang)}}).observe(document.body,{childList:true,subtree:true});
+$('#lgb').onclick=()=>{LANG=LANG=='ar'?'en':'ar';try{localStorage.setItem('cp_lang',LANG)}catch(e){}$('#lgb').textContent=LANG=='ar'?'English':'عربي';applyLang()};
+$('#lgb').textContent=LANG=='ar'?'English':'عربي';
+if(CLOUD)boot();else{prof();renderAll();showView('w')}
+applyLang();
+</script></main></body></html>
