@@ -45,6 +45,9 @@ details{border-bottom:1px solid var(--bd);padding:6px 0}summary{cursor:pointer}
 <div class="card"><b>Bulk paste</b> <span class="mu">one keyword per line; intent is auto-suggested (EN + AR), editable in the table</span>
 <textarea id="bk" rows="3" style="width:100%;margin:6px 0" dir="auto"></textarea>
 <div class="row"><select id="bl"><option>EN</option><option>AR</option></select><button id="bb">Add keywords</button></div></div>
+<div class="card"><b>Create new ideas from my content</b> <span class="mu">free and built in: uses the client profile and old content, and skips anything already covered</span>
+<div class="row" style="margin:6px 0">How many <input type="number" id="ng" value="20" min="5" max="60"> Language <select id="ngl"><option value="AR">Arabic</option><option value="EN">English</option><option value="BOTH">Both</option></select><button class="p" id="ngb">Create ideas</button></div><div id="ngo"></div>
+<div class="mu">New ideas come with no search volume. Add it later from Search Console or a keyword tool.</div></div>
 <div class="card"><b>Get ideas for this client</b> <span class="mu">free: the tool writes the request, claude.ai writes the ideas</span>
 <div class="row" style="margin:6px 0">How many <input type="number" id="gn" value="20" min="5" max="60"> Language <select id="gnl"><option value="AR">Arabic</option><option value="EN">English</option><option value="BOTH">Both</option></select><button class="p" id="gp">Copy ideas request</button><a href="https://claude.ai/new" target="_blank" rel="noopener"><button type="button">Open claude.ai</button></a></div>
 <textarea id="gpo" rows="3" style="width:100%" readonly hidden></textarea>
@@ -68,7 +71,7 @@ details{border-bottom:1px solid var(--bd);padding:6px 0}summary{cursor:pointer}
 <div class="card"><div class="row"><b>More profile details</b><span style="flex:1"></span><button id="aw">Auto-fill from website (AI)</button></div><div id="awo"></div>
 <textarea id="p_v" rows="2" placeholder="Brand voice and tone" style="width:100%;margin-top:8px" dir="auto"></textarea>
 <textarea id="p_pr" rows="2" placeholder="Products / services" style="width:100%;margin-top:6px" dir="auto"></textarea>
-<textarea id="p_so" rows="3" placeholder="Social media links, one per line (Instagram: https://…)" style="width:100%;margin-top:6px"></textarea>
+<div style="margin-top:8px"><div class="row"><b>Social media accounts</b><button id="p_soa">+ Add social account</button></div><div id="p_soc"></div></div>
 <div class="row" style="margin-top:6px"><input id="p_co" placeholder="Brand colors, comma separated (#0f6e56, #ffffff)" style="flex:1"><span id="sws"></span></div>
 <textarea id="p_g" rows="2" placeholder="Goals" style="width:100%;margin-top:6px" dir="auto"></textarea>
 <textarea id="p_nt" rows="2" placeholder="Notes" style="width:100%;margin-top:6px" dir="auto"></textarea></div>
@@ -176,12 +179,12 @@ function show(){const c=cur();if(!plan.length){const w=lastWhy;let m='No plan ye
  $('#out').innerHTML='<div class="card wr">'+m+'</div>'+(flags.length?'<div class="card"><b>Skipped as overlapping</b>'+flags.slice(0,40).map(f=>`<div dir="auto">${esc(f.x.topic)} overlaps ${f.cf.old?'past plan item ':''}“${esc(f.cf.kw)}”</div>`).join('')+'</div>':'');return}
  let h='';for(let w=1;w<=4;w++){const a=plan.filter(x=>x.wk==w);if(!a.length)continue;h+=`<div class="card"><b>Week ${w}</b>`+a.map(x=>{
   const links=c.i.filter(y=>y.cluster==x.cluster&&y.id!=x.id).slice(0,3).map(y=>y.topic);
-  return `<details><summary dir="auto">${(c.pins||[]).includes(x.id)?'📌 ':''}<b>${esc(x.topic)}</b> <span class="tag">${INT[x.intent]}</span> <span class="tag">${esc(x.format)}</span> <span class="mu">${x.lang} · ${esc(x.cluster)}</span></summary>
+  return `<details><summary dir="auto"><span class="noprint" data-xp="${x.id}" title="Remove from plan" style="cursor:pointer;padding:0 6px;color:var(--wr);font-weight:700">✕</span> ${(c.pins||[]).includes(x.id)?'📌 ':''}<b>${esc(x.topic)}</b> <span class="tag">${INT[x.intent]}</span> <span class="tag">${esc(x.format)}</span> <span class="mu">${x.lang} · ${esc(x.cluster)}</span></summary>
   <div class="mu">${esc(x.why)}</div><p><b>Target keyword:</b> <span dir="auto">${esc(x.kw)}</span> · vol ${x.vol} · KD ${x.kd}</p>
   <p><b>Suggested H2s:</b></p><ol>${(OUT[x.format]||[]).map(o=>`<li>${o}</li>`).join('')}</ol>
   <p><b>Internal links:</b> ${links.length?links.map(esc).join('; '):'none in cluster yet'}</p><p><b>CTA:</b> ${CTA[x.stage]}</p><div id="an-${x.id}">${anHtml(x)}</div><div id="bo-${x.id}">${boHtml(x)}</div><div class="row noprint"><button data-an="${x.id}">Analyze market (AI)</button><button data-bo="${x.id}">Optimize brief (AI)</button><button data-pin="${x.id}">${(c.pins||[]).includes(x.id)?'Unpin':'📌 Pin'}</button>${x.refresh?'':`<button data-sw="${x.id}">↔ Swap</button>`}</div></details>`}).join('')+'</div>'}
  if(flags.length)h+=`<div class="card"><b class="wr">Cannibalization warnings</b>`+flags.map(f=>`<div dir="auto">${esc(f.x.topic)} overlaps ${f.cf.old?'old plan item ':''}“${esc(f.cf.kw)}”. Merge or refresh instead of a new post.</div>`).join('')+'</div>';
- $('#out').innerHTML=h;$('#out').querySelectorAll('[data-an]').forEach(b=>b.onclick=()=>analyze(b.dataset.an));const q=(a,f)=>$('#out').querySelectorAll(a).forEach(b=>b.onclick=()=>f(b.dataset[a.slice(6,-1)]));q('[data-bo]',optimize);q('[data-pin]',pin);q('[data-sw]',swap)}
+ $('#out').innerHTML=h;$('#out').querySelectorAll('[data-an]').forEach(b=>b.onclick=()=>analyze(b.dataset.an));const q=(a,f)=>$('#out').querySelectorAll(a).forEach(b=>b.onclick=()=>f(b.dataset[a.slice(6,-1)]));q('[data-bo]',optimize);q('[data-pin]',pin);q('[data-sw]',swap);$('#out').querySelectorAll('[data-xp]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();removeFromPlan(b.dataset.xp)})}
 
 function dash(){const a=cur().i;const bars=(t,f,keys)=>{const m={};a.forEach(x=>{const k=f(x);m[k]=(m[k]||0)+1});const mx=Math.max(1,...Object.values(m));return`<div class="card"><b>${t}</b>`+(keys||Object.keys(m)).map(k=>`<div class="bar"><span>${esc(INT[k]||k)}</span><i style="width:${(m[k]||0)/mx*120}px"></i><span>${m[k]||0}</span></div>`).join('')+'</div>'};
  const cl=[...new Set(a.map(x=>x.cluster))],gaps=cl.map(c=>({c,m:Object.keys(INT).filter(k=>!a.some(x=>x.cluster==c&&x.intent==k))})).filter(g=>g.m.length);
@@ -328,11 +331,10 @@ function legacy(d){let n=0;Object.entries(d.c).forEach(([nm,cl])=>{let k=nm;whil
 // --- profile tab ---
 const parseSo=t=>{const o={};t.split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{const m=l.match(/^([^:\/]+):\s*(\S.*)$/);if(m&&!/^https?$/i.test(m[1]))o[m[1].trim()]=m[2].trim();else o[l]=l});return o};
 const fmtSo=o=>Object.entries(o||{}).map(([k,v])=>k==v?k:k+': '+v).join('\n');
-function pfFill(p){$('#p_v').value=p.voice||'';$('#p_pr').value=p.prod||'';$('#p_g').value=p.goals||'';$('#p_nt').value=p.notes||'';$('#p_so').value=fmtSo(p.social);$('#p_co').value=(p.colors||[]).join(', ');sws(p)}
+function pfFill(p){$('#p_v').value=p.voice||'';$('#p_pr').value=p.prod||'';$('#p_g').value=p.goals||'';$('#p_nt').value=p.notes||'';socRender();$('#p_co').value=(p.colors||[]).join(', ');sws(p)}
 const sws=p=>$('#sws').innerHTML=(p.colors||[]).map(c=>`<span class="sw" style="background:${esc(c)}" title="${esc(c)}"></span>`).join(' ');
 const pm={p_v:'voice',p_pr:'prod',p_g:'goals',p_nt:'notes'};
 Object.keys(pm).forEach(id=>$('#'+id).oninput=()=>{const p=cur().p||(cur().p={});p[pm[id]]=$('#'+id).value;save()});
-$('#p_so').oninput=()=>{const p=cur().p||(cur().p={});p.social=parseSo($('#p_so').value);save()};
 $('#p_co').oninput=()=>{const p=cur().p||(cur().p={});p.colors=$('#p_co').value.split(',').map(s=>s.trim()).filter(Boolean);save();sws(p)};
 async function ensureId(){const c=cur();if(!c.id){clearTimeout(tm);await syncAll()}return c.id}
 async function pfLoad(){const loc='<span class="mu">Available in the live (database) version.</span>';
@@ -360,7 +362,7 @@ $('#aw').onclick=async()=>{const p=cur().p||{};if(!CLOUD)return alert('Auto-fill
   $('#aok').onclick=()=>{const v=k=>$('#awo [data-s='+k+']').value.trim();const q=cur().p||(cur().p={});if(v('industry'))q.ind=v('industry');if(v('brief'))q.brief=v('brief');if(v('market'))q.m=v('market');if(v('audience'))q.a=v('audience');if(v('voice'))q.voice=v('voice');save();prof();$('#awo').innerHTML='<span class="mu">Applied and saved.</span>'}}
  catch(e){$('#awo').innerHTML='<span class="wr">Auto-fill failed: '+esc(e.message||'error')+'</span>'}};
 // --- saved plan history ---
-function planSave(isNew){if(!CLOUD)return;if(isNew)curPlanId=null;clearTimeout(pt);pt=setTimeout(async()=>{try{if(!plan.length)return;const c=cur();await ensureId();await syncAll();const mo=$('#mo').value||new Date().toISOString().slice(0,7);
+function planSave(isNew){if(!CLOUD)return;if(isNew)curPlanId=null;clearTimeout(pt);pt=setTimeout(async()=>{try{if(!plan.length){if(curPlanId)await sb.from('plan_items').delete().eq('plan_id',curPlanId);return}const c=cur();await ensureId();await syncAll();const mo=$('#mo').value||new Date().toISOString().slice(0,7);
   if(!curPlanId){curPlanId=uid();const r=await sb.from('plans').insert({id:curPlanId,client_id:c.id,month:mo,name:S.cur+' '+mo,params:{n:+$('#n').value,r:+$('#r').value,lg:$('#lg').value,q:c.q}});if(r.error){curPlanId=null;throw r.error}}
   const d=await sb.from('plan_items').delete().eq('plan_id',curPlanId);if(d.error)throw d.error;
   const U=/^[0-9a-f-]{36}$/,r2=await sb.from('plan_items').insert(plan.map((x,i)=>({plan_id:curPlanId,client_id:c.id,idea_id:U.test(x.id)?x.id:null,week:x.wk,sort_order:i,topic:x.topic,kw:x.kw,intent:x.intent,format:x.format,cluster:x.cluster,lang:x.lang,why:x.why||null,refresh:!!x.refresh,pinned:(c.pins||[]).includes(x.id),analysis:x.an||null,optimized:x.ob||null})));
@@ -380,14 +382,18 @@ async function hsLoad(){if(!CLOUD){$('#hl').innerHTML='<span class="mu">Plan his
   dl('plan-history.csv','\ufeff'+['week,topic,keyword,intent,format,cluster,lang,why'].concat(it.map(x=>[x.week,x.topic,x.kw,INT[x.intent]||x.intent,x.format,x.cluster,x.lang,x.why].map(q).join(','))).join('\n'),'text/csv')})}
 // ===== STAGE 3B: competitors, team page, EN/AR =====
 const caShow=(a,t)=>$('#cao').innerHTML=a?`<div class="card" dir="auto"><b>Latest AI analysis</b> <span class="mu">${t?new Date(t).toLocaleDateString():''}</span><p>${esc(a.summary)}</p><b>Content gaps</b><ul>${(a.gaps||[]).map(g=>`<li>${esc(g)}</li>`).join('')}</ul><b>Opportunities</b><ul>${(a.opportunities||[]).map(g=>`<li>${esc(g)}</li>`).join('')}</ul></div>`:'';
-async function cpLoad(){if(!CLOUD){$('#cpl').innerHTML='<div class="card mu">Competitors are saved in the live (database) version.</div>';return}
- const id=await ensureId();const [r,c]=await Promise.all([sb.from('competitors').select('*').eq('client_id',id).order('priority',{ascending:false}).order('name'),sb.from('clients').select('competitor_analysis,competitor_analysis_at').eq('id',id).single()]);
- $('#cpl').innerHTML=(r.data||[]).map(x=>`<div class="card" data-cp="${x.id}" dir="auto"><div class="row"><input data-f="name" value="${esc(x.name)}"><input data-f="website" value="${esc(x.website)}" placeholder="Website"><label><input type="checkbox" data-f="priority" ${x.priority?'checked':''}> ⭐ Priority</label><button data-dc="${x.id}">Delete</button></div>`+[['content_focus','Content focus'],['strengths','Strengths'],['weaknesses','Weaknesses'],['notes','Notes']].map(([f,l])=>`<textarea data-f="${f}" rows="2" placeholder="${l}" style="width:100%;margin-top:6px">${esc(x[f])}</textarea>`).join('')+`<textarea data-f="social" rows="2" placeholder="Social links, one per line" style="width:100%;margin-top:6px">${esc(fmtSo(x.social))}</textarea></div>`).join('')||'<div class="card mu">No competitors yet.</div>';
- $('#cpl').querySelectorAll('[data-f]').forEach(e=>e.onchange=async()=>{const k=e.dataset.f,v=e.type=='checkbox'?e.checked:k=='social'?parseSo(e.value):e.value,x=await sb.from('competitors').update({[k]:v}).eq('id',e.closest('[data-cp]').dataset.cp);if(x.error)alert(x.error.message);else if(k=='priority')cpLoad()});
- $('#cpl').querySelectorAll('[data-dc]').forEach(b=>b.onclick=async()=>{if(confirm('Delete this competitor?')){await sb.from('competitors').delete().eq('id',b.dataset.dc);cpLoad()}});
- caShow(c.data&&c.data.competitor_analysis,c.data&&c.data.competitor_analysis_at)}
-$('#cadd').onclick=async()=>{if(!CLOUD)return alert('Competitors are saved in the live (database) version.');const n=$('#c_n').value.trim();if(!n)return alert('Enter the competitor name');
- const r=await sb.from('competitors').insert({client_id:await ensureId(),name:n,website:$('#c_w').value.trim()||null});if(r.error)return alert(r.error.message);$('#c_n').value='';$('#c_w').value='';cpLoad()};
+async function cpRows(){if(CLOUD){const id=await ensureId();const r=await sb.from('competitors').select('*').eq('client_id',id).order('priority',{ascending:false}).order('name');return r.data||[]}return(cur().cmp||[]).slice().sort((a,b)=>(!!b.priority-!!a.priority)||a.name.localeCompare(b.name))}
+async function cpUpd(id,k,v){if(CLOUD){const r=await sb.from('competitors').update({[k]:v}).eq('id',id);if(r.error)return alert(r.error.message)}else{const x=(cur().cmp||[]).find(y=>y.id==id);if(x){x[k]=v;save()}}setSv('Competitor saved')}
+async function cpLoad(){const rows=await cpRows();
+ $('#cpl').innerHTML=rows.map(x=>`<div class="card" data-cp="${x.id}" dir="auto"><div class="row"><input data-f="name" value="${esc(x.name)}"><input data-f="website" value="${esc(x.website)}" placeholder="Website"><label><input type="checkbox" data-f="priority" ${x.priority?'checked':''}> ⭐ Priority</label><button data-dc="${x.id}">Delete</button></div>`+[['content_focus','Content focus'],['strengths','Strengths'],['weaknesses','Weaknesses'],['notes','Notes']].map(([f,l])=>`<textarea data-f="${f}" rows="2" placeholder="${l}" style="width:100%;margin-top:6px">${esc(x[f])}</textarea>`).join('')+`<textarea data-f="social" rows="2" placeholder="Social links, one per line" style="width:100%;margin-top:6px">${esc(fmtSo(x.social))}</textarea></div>`).join('')||'<div class="card mu">No competitors yet. Add the first one above, then add as many as you like.</div>';
+ $('#cpl').querySelectorAll('[data-f]').forEach(e=>e.onchange=async()=>{const k=e.dataset.f,v=e.type=='checkbox'?e.checked:k=='social'?parseSo(e.value):e.value;await cpUpd(e.closest('[data-cp]').dataset.cp,k,v);if(k=='priority')cpLoad()});
+ $('#cpl').querySelectorAll('[data-dc]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this competitor?'))return;if(CLOUD)await sb.from('competitors').delete().eq('id',b.dataset.dc);else{cur().cmp=(cur().cmp||[]).filter(y=>y.id!=b.dataset.dc);save()}setSv('Competitor deleted');cpLoad()});
+ if(CLOUD){const c=await sb.from('clients').select('competitor_analysis,competitor_analysis_at').eq('id',cur().id).single();caShow(c.data&&c.data.competitor_analysis,c.data&&c.data.competitor_analysis_at)}}
+$('#cadd').onclick=async()=>{const n=$('#c_n').value.trim();if(!n)return alert('Enter the competitor name');const w=$('#c_w').value.trim();
+ if(CLOUD){const r=await sb.from('competitors').insert({client_id:await ensureId(),name:n,website:w||null});if(r.error)return alert(r.error.message)}
+ else{(cur().cmp||(cur().cmp=[])).push({id:uid(),name:n,website:w,content_focus:'',strengths:'',weaknesses:'',notes:'',social:{},priority:false});save()}
+ $('#c_n').value='';$('#c_w').value='';setSv('Competitor saved');cpLoad();$('#c_n').focus()};
+['c_n','c_w'].forEach(i=>$('#'+i).onkeydown=e=>{if(e.key=='Enter')$('#cadd').click()});
 $('#ca').onclick=async()=>{if(!CLOUD)return alert('This uses the secure AI server of the live version.');const id=await ensureId();$('#cao').innerHTML='<span class="mu">Analyzing competitors…</span>';
  try{const data=await aiCall('competitors',{client_id:id});const at=new Date().toISOString();
   const u=await sb.from('clients').update({competitor_analysis:data,competitor_analysis_at:at}).eq('id',id);if(u.error)throw u.error;caShow(data,at)}
@@ -419,6 +425,31 @@ function applyLang(){const ar=LANG=='ar';document.documentElement.dir=ar?'rtl':'
 new MutationObserver(()=>{if(LANG=='ar'){cancelAnimationFrame(raf);raf=requestAnimationFrame(applyLang)}}).observe(document.body,{childList:true,subtree:true});
 $('#lgb').onclick=()=>{LANG=LANG=='ar'?'en':'ar';try{localStorage.setItem('cp_lang',LANG)}catch(e){}$('#lgb').textContent=LANG=='ar'?'English':'عربي';applyLang()};
 $('#lgb').textContent=LANG=='ar'?'English':'عربي';
+// ---- free idea engine (no AI): builds NEW ideas from the client's profile and old content, skipping duplicates ----
+const STOP=new Set('the a an of for in to and or is are with on your you my how what best top price cost guide vs near me why when في من على إلى عن مع هل ما هو هي كيف أفضل افضل سعر اسعار أسعار تكلفة طريقة دليل الفرق بين لماذا متى'.split(' '));
+const core=(t,m)=>{const M=new Set((m||'').toLowerCase().split(/\s+/));return t.toLowerCase().replace(/[?؟:,.،()"'“”]/g,' ').split(/\s+/).filter(x=>x&&!STOP.has(x)&&!M.has(x)).slice(0,4).join(' ')};
+function seeds(c,m){const cnt={},add=(s,w)=>{s=s.trim();if(s.length>2)cnt[s]=(cnt[s]||0)+w};
+ ((c.p||{}).prod||'').split(/[\n,;،]/).forEach(x=>add(x.toLowerCase(),5));
+ [...(c.old||[]).map(o=>o.k||o.t),...(c.hist||[]).map(h=>h.k),...c.i.map(i=>i.kw)].forEach(t=>{const k=core(t,m);if(k)add(k,1)});
+ const seen=new Set();return Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(e=>e[0]).filter(x=>{const k=x.replace(/s\b/g,'');if(seen.has(k))return false;seen.add(k);return true}).slice(0,14)}
+const TPL={EN:{info:[['how to choose {x}','how-to guide'],['what is {x}','glossary'],['{x}: a complete guide','how-to guide'],['common mistakes to avoid with {x}','listicle'],['{x} checklist','checklist'],['when do you need {x}?','FAQ'],['{x}: frequently asked questions','FAQ']],comm:[['best {x} in {m}','roundup'],['{x} compared: how to choose between your options','comparison'],['questions to ask before choosing {x}','checklist'],['{x} reviews: what to look for','roundup']],trans:[['{x} price in {m}','listicle'],['how much does {x} cost?','how-to guide'],['book {x} in {m}','how-to guide']],nav:[['why choose {c} for {x}','opinion'],['{x} at {c}: how we work','case study']]},
+AR:{info:[['كيف تختار {x}','how-to guide'],['ما هو {x}؟','glossary'],['دليل {x} الشامل','how-to guide'],['أخطاء شائعة عند {x}','listicle'],['قائمة مراجعة {x}','checklist'],['متى تحتاج إلى {x}؟','FAQ'],['أسئلة شائعة عن {x}','FAQ']],comm:[['أفضل {x} في {m}','roundup'],['مقارنة بين خيارات {x}','comparison'],['أسئلة يجب أن تسألها قبل اختيار {x}','checklist'],['تقييم {x}: ما الذي يجب البحث عنه','roundup']],trans:[['سعر {x} في {m}','listicle'],['كم تكلفة {x}؟','how-to guide'],['احجز {x} في {m}','how-to guide']],nav:[['لماذا تختار {c} من أجل {x}','opinion'],['{x} في {c}: كيف نعمل','case study']]}};
+let genL=[];
+function makeIdeas(){const c=cur(),p=c.p||{},n=Math.min(60,+$('#ng').value||20),lg=$('#ngl').value,m=(p.m||'').split(/[,،]/)[0].trim(),o=$('#ngo');
+ const S=seeds(c,m).filter(x=>lg=='BOTH'||(lg=='AR')==isAr(x));
+ if(!S.length){o.innerHTML='<div class="wr">No topics found in this language. Add the client’s products or services in Profile, or add old content or ideas in this language, then try again.</div>';return}
+ const cand=[];S.forEach((x,si)=>{const L=isAr(x)?'AR':'EN';Object.keys(INT).forEach(k=>TPL[L][k].forEach(([pat,fm],ti)=>{let t=pat.replace('{x}',x).replace('{c}',S_NAME());t=m?t.replace('{m}',m):t.replace(/ (in|في) \{m\}/,'');if(L=='EN')t=t[0].toUpperCase()+t.slice(1);
+  cand.push({topic:t,kw:t.toLowerCase().replace(/[?؟:]/g,'').trim(),intent:k,format:fm,cluster:x[0].toUpperCase()+x.slice(1),lang:L,ti,si})}))});
+ cand.sort((a,b)=>a.ti-b.ti||a.si-b.si);
+ const have=[...c.i.map(i=>i.kw),...(c.old||[]).map(x=>x.k),...(c.old||[]).map(x=>x.t)],out=[];
+ const ok=x=>!dup(x)&&!have.some(h=>h.toLowerCase()==x.kw||sim(x.kw,h)>=.6)&&!out.some(y=>y.kw==x.kw||sim(x.kw,y.kw)>=.85);
+ const q=c.q||{};for(const k in INT){const t=Math.round(n*(q[k]||0)/100);let g=0;for(const x of cand){if(g>=t||out.length>=n)break;if(x.intent==k&&ok(x)){out.push(x);g++}}}
+ for(const x of cand){if(out.length>=n)break;if(!out.includes(x)&&ok(x))out.push(x)}
+ genL=out;
+ o.innerHTML=out.length?`<div class="mu" style="margin:6px 0">${out.length} new ideas. None overlap your old content or existing ideas. Untick any you don’t want.</div><div class="sc"><table>`+out.map((x,i)=>`<tr><td><input type="checkbox" data-g="${i}" checked></td><td dir="auto">${esc(x.topic)}</td><td>${INT[x.intent]}</td><td>${esc(x.format)}</td><td dir="auto">${esc(x.cluster)}</td></tr>`).join('')+'</table></div><button class="p" id="nga" style="margin-top:6px">Add selected to Idea bank</button>':'<div class="wr">Everything this tool could suggest already overlaps your old content or ideas. Add more products/services in Profile or try the other language.</div>';
+ const b=$('#nga');if(b)b.onclick=()=>{let k=0;o.querySelectorAll('[data-g]:checked').forEach(e=>{const x=genL[+e.dataset.g];cur().i.unshift(mk(x.topic,x.kw,x.intent,x.format,x.cluster,x.lang,0,0,'','idea','generated'));k++});save();tbl();o.innerHTML='<div class="mu">'+k+' ideas added to the Idea bank.</div>'}}
+const S_NAME=()=>S.cur;
+$('#ngb').onclick=makeIdeas;
 $('#gp').onclick=async()=>{const c=cur(),p=c.p||{},n=+$('#gn').value||20,lg=$('#gnl').value;
  let comp='';if(CLOUD&&c.id){const r=await sb.from('competitors').select('name,website,content_focus,strengths,weaknesses,priority').eq('client_id',c.id).limit(10);comp=(r.data||[]).map(x=>`- ${x.name} (${x.website||'n/a'}) focus: ${x.content_focus||'n/a'}; strengths: ${x.strengths||'n/a'}; weaknesses: ${x.weaknesses||'n/a'}${x.priority?' [priority]':''}`).join('\n')}
  const have=c.i.slice(0,150).map(x=>x.kw).join(' | ')||'none',past=[...(c.old||[]),...(c.hist||[])].slice(0,150).map(x=>x.t).join(' | ')||'none',q=c.q||{},L=lg=='AR'?'Arabic':lg=='EN'?'English':'a mix of English and Arabic (tag each row EN or AR)';
@@ -429,6 +460,7 @@ ${comp||'none provided'}
 ALREADY IN MY IDEA BANK (do not repeat): ${have}
 ALREADY PUBLISHED / PAST PLANS (do not repeat or closely overlap): ${past}
 RULES:
+- First search the web for this client's market: current trends, what competitors write about, and the questions people ask. Use what you find.
 - Language: ${L}.
 - Cover all search intents roughly like this: informational ${q.info}%, commercial ${q.comm}%, transactional ${q.trans}%, brand ${q.nav}%.
 - Vary the formats and angles, and group ideas into topic clusters.
@@ -438,6 +470,16 @@ topic,keyword,intent,format,cluster,language,volume,kd,position,status
 Then one row per idea. Put text in double quotes if it contains commas. intent must be one of: informational, commercial, transactional, brand. format must be one of: ${FM.join(', ')}. language must be EN or AR. Leave volume, kd and position empty. status is always: idea.`;
  $('#gpo').value=t;$('#gpo').hidden=false;
  try{await navigator.clipboard.writeText(t);alert('Request copied. Paste it into claude.ai.')}catch(e){$('#gpo').select();alert('Select the text in the box, copy it, and paste it into claude.ai.')}};
+// ---- social accounts (any platform, any link) ----
+const SOC=['Facebook','Instagram','YouTube','LinkedIn','TikTok','X (Twitter)','Pinterest','Snapchat','Threads','WhatsApp','Telegram','Website','Other'];
+const soList=o=>Array.isArray(o)?o:Object.entries(o||{}).map(([k,v])=>({platform:k==v?'Other':k,url:v}));
+function socRender(){const p=cur().p||(cur().p={}),L=p.social=soList(p.social);
+ $('#p_soc').innerHTML=L.map((x,i)=>`<div class="row" style="margin:4px 0"><select data-sp="${i}">${opt(SOC,SOC.includes(x.platform)?x.platform:'Other')}</select><input data-su="${i}" value="${esc(x.url)}" placeholder="https://…" style="flex:1" dir="ltr">${/^https?:\/\//.test(x.url)?`<a href="${esc(x.url)}" target="_blank" rel="noopener">Open</a>`:''}<button data-sx="${i}" title="Remove">✕</button></div>`).join('')||'<span class="mu">No social accounts yet.</span>';
+ $('#p_soc').querySelectorAll('[data-sp]').forEach(e=>e.onchange=()=>{L[+e.dataset.sp].platform=e.value;save()});
+ $('#p_soc').querySelectorAll('[data-su]').forEach(e=>e.onchange=()=>{L[+e.dataset.su].url=e.value.trim();save();socRender()});
+ $('#p_soc').querySelectorAll('[data-sx]').forEach(b=>b.onclick=()=>{L.splice(+b.dataset.sx,1);save();socRender()})}
+$('#p_soa').onclick=()=>{const p=cur().p||(cur().p={});p.social=soList(p.social);p.social.push({platform:'Facebook',url:''});save();socRender()};
+function removeFromPlan(id){const i=plan.findIndex(z=>z.id==id);if(i<0)return;plan.splice(i,1);if(!plan.length)lastWhy=null;planSave();show()}
 if(CLOUD)boot();else{prof();renderAll();showView('w')}
 applyLang();
 </script></main></body></html>
