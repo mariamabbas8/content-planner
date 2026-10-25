@@ -45,9 +45,6 @@ details{border-bottom:1px solid var(--bd);padding:6px 0}summary{cursor:pointer}
 <div class="card"><b>Bulk paste</b> <span class="mu">one keyword per line; intent is auto-suggested (EN + AR), editable in the table</span>
 <textarea id="bk" rows="3" style="width:100%;margin:6px 0" dir="auto"></textarea>
 <div class="row"><select id="bl"><option>EN</option><option>AR</option></select><button id="bb">Add keywords</button></div></div>
-<div class="card"><b>Create new ideas from my content</b> <span class="mu">free and built in: uses the client profile and old content, and skips anything already covered</span>
-<div class="row" style="margin:6px 0">How many <input type="number" id="ng" value="20" min="5" max="60"> Language <select id="ngl"><option value="AUTO">Auto (match my content)</option><option value="AR">Arabic</option><option value="EN">English</option><option value="BOTH">Both</option></select><button class="p" id="ngb">Create ideas</button></div><div class="mu" id="ngu"></div><div id="ngo"></div>
-<div class="mu">New ideas come with no search volume. Add it later from Search Console or a keyword tool.</div></div>
 <div class="card"><b>Get ideas for this client</b> <span class="mu">free: the tool writes the request, claude.ai writes the ideas</span>
 <div class="row" style="margin:6px 0">How many <input type="number" id="gn" value="20" min="5" max="60"> Language <select id="gnl"><option value="AR">Arabic</option><option value="EN">English</option><option value="BOTH">Both</option></select><button class="p" id="gp">Copy ideas request</button><a href="https://claude.ai/new" target="_blank" rel="noopener"><button type="button">Open claude.ai</button></a></div>
 <textarea id="gpo" rows="3" style="width:100%" readonly hidden></textarea>
@@ -71,14 +68,14 @@ details{border-bottom:1px solid var(--bd);padding:6px 0}summary{cursor:pointer}
 <div class="card"><div class="row"><b>More profile details</b><span style="flex:1"></span><button id="aw">Auto-fill from website (AI)</button></div><div id="awo"></div>
 <textarea id="p_v" rows="2" placeholder="Brand voice and tone" style="width:100%;margin-top:8px" dir="auto"></textarea>
 <textarea id="p_pr" rows="2" placeholder="Products / services" style="width:100%;margin-top:6px" dir="auto"></textarea>
-<div style="margin-top:8px"><div class="row"><b>Social media accounts</b><button id="p_soa">+ Add social account</button></div><div id="p_soc"></div></div>
+<textarea id="p_so" rows="3" placeholder="Social media links, one per line (Instagram: https://…)" style="width:100%;margin-top:6px"></textarea>
 <div class="row" style="margin-top:6px"><input id="p_co" placeholder="Brand colors, comma separated (#0f6e56, #ffffff)" style="flex:1"><span id="sws"></span></div>
 <textarea id="p_g" rows="2" placeholder="Goals" style="width:100%;margin-top:6px" dir="auto"></textarea>
 <textarea id="p_nt" rows="2" placeholder="Notes" style="width:100%;margin-top:6px" dir="auto"></textarea></div>
 <div class="card" id="fcard"><b>Logo and attachments</b><div class="row" style="margin:6px 0"><label>Logo <input type="file" id="lfi" accept="image/*"></label><label>Attachments <input type="file" id="afi" multiple></label></div><div id="fl"></div></div>
 <div class="card" id="kcard"><div class="row"><b>KPIs</b><span class="mu">optional</span><button id="ka">+ Add KPI</button></div><div id="kl"></div></div>
 </section>
-<section id="cp" hidden><div class="card"><div class="row"><b>Competitors</b><span style="flex:1"></span><button id="cpe">Expand all</button><button id="cpc">Collapse all</button><button id="ca">Analyze competitors with AI</button></div>
+<section id="cp" hidden><div class="card"><div class="row"><b>Competitors</b><span style="flex:1"></span><button id="ca">Analyze competitors with AI</button></div>
 <div class="row" style="margin-top:8px"><input id="c_n" placeholder="Competitor name"><input id="c_w" placeholder="Website"><button class="p" id="cadd">+ Add competitor</button></div><div id="cao"></div></div><div id="cpl"></div></section>
 <section id="hs" hidden><div class="card"><b>Saved plans</b> <span class="mu">every generated plan is saved automatically</span><div id="hl" style="margin-top:8px"></div></div></section></div></div>
 
@@ -140,7 +137,7 @@ function renderAll(){ cls();
   const x=mk(t,k,$('#f_i').value,$('#f_f').value,$('#f_c').value.trim(),$('#f_l').value,$('#f_v').value,$('#f_d').value,$('#f_p').value);cur().i.unshift(x);save();['f_t','f_k'].forEach(i=>$('#'+i).value='');tbl()};
  document.querySelectorAll('[data-q]').forEach(e=>e.onchange=()=>{cur().q[e.dataset.q]=+e.value||0;save()});tbl()}
 
-function tbl(){setTimeout(ngInfo,0);const q=$('#q').value.toLowerCase(),fi=$('#fi2').value,fs=$('#fs').value;
+function tbl(){const q=$('#q').value.toLowerCase(),fi=$('#fi2').value,fs=$('#fs').value;
  let a=cur().i.filter(x=>(!q||(x.topic+x.kw+x.cluster).toLowerCase().includes(q))&&(!fi||x.intent==fi)&&(!fs||x.status==fs));
  if(sortK)a.sort((x,y)=>(x[sortK]>y[sortK]?1:-1)*sortD);
  const H=[['topic','Topic'],['kw','Keyword'],['intent','Intent'],['format','Format'],['cluster','Cluster'],['lang','Lang'],['vol','Vol'],['kd','KD'],['pos','Pos'],['status','Status']];
@@ -178,13 +175,13 @@ function show(){const c=cur();if(!plan.length){const w=lastWhy;let m='No plan ye
  if(w)m=w.all==0?'No eligible ideas: the Idea bank is empty or every idea is already published. Add ideas with status "idea".':w.lang==0?`None of your ${w.all} eligible ideas match the Language filter. Change <b>Language</b> to All, or check the language of each idea.`:w.flag>0?`${w.lang} ideas matched, but ${w.flag} were skipped because they overlap past content (old plans or earlier plans), so nothing was left to plan. Review the list below, add new ideas, or edit the past content plan.`:'No ideas could be selected. Check that Posts is more than 0.';
  $('#out').innerHTML='<div class="card wr">'+m+'</div>'+(flags.length?'<div class="card"><b>Skipped as overlapping</b>'+flags.slice(0,40).map(f=>`<div dir="auto">${esc(f.x.topic)} overlaps ${f.cf.old?'past plan item ':''}“${esc(f.cf.kw)}”</div>`).join('')+'</div>':'');return}
  let h='';for(let w=1;w<=4;w++){const a=plan.filter(x=>x.wk==w);if(!a.length)continue;h+=`<div class="card"><b>Week ${w}</b>`+a.map(x=>{
-  const links=c.i.filter(y=>y.cluster==x.cluster&&y.id!=x.id).slice(0,3).map(y=>y.topic),ar=xAr(x);
-  return `<details><summary dir="auto"><span class="noprint" data-xp="${x.id}" title="Remove from plan" style="cursor:pointer;padding:0 6px;color:var(--wr);font-weight:700">✕</span> ${(c.pins||[]).includes(x.id)?'📌 ':''}<b>${esc(x.topic)}</b> <span class="tag">${ar?INTA[x.intent]:INT[x.intent]}</span> <span class="tag">${esc(ar?(FMA[x.format]||x.format):x.format)}</span> <span class="mu">${x.lang} · ${esc(x.cluster)}</span></summary>
-  <div class="mu" dir="auto">${esc(ar?whyAr(x.why):x.why)}</div><p dir="auto"><b>${ar?'الكلمة المفتاحية:':'Target keyword:'}</b> <span dir="auto">${esc(x.kw)}</span> · ${ar?'الحجم':'vol'} ${x.vol} · ${ar?'الصعوبة':'KD'} ${x.kd}</p>
-  <p dir="auto"><b>${ar?'العناوين الفرعية المقترحة (H2):':'Suggested H2s:'}</b></p><ol dir="auto">${((ar?OUTA:OUT)[x.format]||[]).map(o=>`<li>${o}</li>`).join('')}</ol>
-  <p dir="auto"><b>${ar?'الروابط الداخلية:':'Internal links:'}</b> ${links.length?links.map(esc).join('; '):(ar?'لا توجد مقالات في نفس المجموعة بعد':'none in cluster yet')}</p><p dir="auto"><b>${ar?'الدعوة لاتخاذ إجراء (CTA):':'CTA:'}</b> ${(ar?CTAA:CTA)[x.stage]}</p><div id="an-${x.id}">${anHtml(x)}</div><div id="bo-${x.id}">${boHtml(x)}</div><div class="row noprint"><button data-an="${x.id}">Analyze market (AI)</button><button data-bo="${x.id}">Optimize brief (AI)</button><button data-pin="${x.id}">${(c.pins||[]).includes(x.id)?'Unpin':'📌 Pin'}</button>${x.refresh?'':`<button data-sw="${x.id}">↔ Swap</button>`}</div></details>`}).join('')+'</div>'}
+  const links=c.i.filter(y=>y.cluster==x.cluster&&y.id!=x.id).slice(0,3).map(y=>y.topic);
+  return `<details><summary dir="auto">${(c.pins||[]).includes(x.id)?'📌 ':''}<b>${esc(x.topic)}</b> <span class="tag">${INT[x.intent]}</span> <span class="tag">${esc(x.format)}</span> <span class="mu">${x.lang} · ${esc(x.cluster)}</span></summary>
+  <div class="mu">${esc(x.why)}</div><p><b>Target keyword:</b> <span dir="auto">${esc(x.kw)}</span> · vol ${x.vol} · KD ${x.kd}</p>
+  <p><b>Suggested H2s:</b></p><ol>${(OUT[x.format]||[]).map(o=>`<li>${o}</li>`).join('')}</ol>
+  <p><b>Internal links:</b> ${links.length?links.map(esc).join('; '):'none in cluster yet'}</p><p><b>CTA:</b> ${CTA[x.stage]}</p><div id="an-${x.id}">${anHtml(x)}</div><div id="bo-${x.id}">${boHtml(x)}</div><div class="row noprint"><button data-an="${x.id}">Analyze market (AI)</button><button data-bo="${x.id}">Optimize brief (AI)</button><button data-pin="${x.id}">${(c.pins||[]).includes(x.id)?'Unpin':'📌 Pin'}</button>${x.refresh?'':`<button data-sw="${x.id}">↔ Swap</button>`}</div></details>`}).join('')+'</div>'}
  if(flags.length)h+=`<div class="card"><b class="wr">Cannibalization warnings</b>`+flags.map(f=>`<div dir="auto">${esc(f.x.topic)} overlaps ${f.cf.old?'old plan item ':''}“${esc(f.cf.kw)}”. Merge or refresh instead of a new post.</div>`).join('')+'</div>';
- $('#out').innerHTML=h;$('#out').querySelectorAll('[data-an]').forEach(b=>b.onclick=()=>analyze(b.dataset.an));const q=(a,f)=>$('#out').querySelectorAll(a).forEach(b=>b.onclick=()=>f(b.dataset[a.slice(6,-1)]));q('[data-bo]',optimize);q('[data-pin]',pin);q('[data-sw]',swap);$('#out').querySelectorAll('[data-xp]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();removeFromPlan(b.dataset.xp)})}
+ $('#out').innerHTML=h;$('#out').querySelectorAll('[data-an]').forEach(b=>b.onclick=()=>analyze(b.dataset.an));const q=(a,f)=>$('#out').querySelectorAll(a).forEach(b=>b.onclick=()=>f(b.dataset[a.slice(6,-1)]));q('[data-bo]',optimize);q('[data-pin]',pin);q('[data-sw]',swap)}
 
 function dash(){const a=cur().i;const bars=(t,f,keys)=>{const m={};a.forEach(x=>{const k=f(x);m[k]=(m[k]||0)+1});const mx=Math.max(1,...Object.values(m));return`<div class="card"><b>${t}</b>`+(keys||Object.keys(m)).map(k=>`<div class="bar"><span>${esc(INT[k]||k)}</span><i style="width:${(m[k]||0)/mx*120}px"></i><span>${m[k]||0}</span></div>`).join('')+'</div>'};
  const cl=[...new Set(a.map(x=>x.cluster))],gaps=cl.map(c=>({c,m:Object.keys(INT).filter(k=>!a.some(x=>x.cluster==c&&x.intent==k))})).filter(g=>g.m.length);
@@ -204,20 +201,7 @@ $('#ex').onclick=async()=>{if(CLOUD){setSv('Preparing export…');for(const n in
 $('#im').onclick=()=>$('#fi').click();
 $('#fi').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.c)throw 0;if(CLOUD)return legacy(d);S=d;save();plan=[];renderAll()}catch(x){alert('Invalid backup file')}})};
 // ---- client profile + old plan ----
-let dupIx=null,dupKey='',dupMemo=new Map();
-const dTk=s=>new Set(String(s||'').toLowerCase().split(/\s+/).filter(Boolean));
-const dSim=(A,B)=>{let n=0;for(const t of A)if(B.has(t))n++;return n/(A.size+B.size-n||1)};
-function dupBuild(){const c=cur(),mo=$('#mo').value,O=c.old||[],H=c.hist||[],key=S.cur+'|'+O.length+'|'+H.length+'|'+mo+'|'+((O[0]||{}).t||'')+'|'+((O[O.length-1]||{}).t||'');
- if(dupIx&&key==dupKey)return dupIx;dupKey=key;dupMemo=new Map();
- const items=[...O,...H.filter(h=>h.man||h.m!=mo)].map(o=>({t:o.t,kk:dTk(o.k),tt:dTk(o.t)})),post=new Map();
- items.forEach((it,i)=>{for(const t of new Set([...it.kk,...it.tt])){let a=post.get(t);if(!a)post.set(t,a=[]);a.push(i)}});
- return dupIx={items,post}}
-function dup(x){const ix=dupBuild(),mk0=(x.kw||'')+'\u0001'+(x.topic||'');if(dupMemo.has(mk0))return dupMemo.get(mk0);
- const kx=dTk(x.kw),tx=dTk(x.topic);let res=null;
- for(const A of [kx,tx]){if(res||!A.size)continue;const need=Math.ceil(.6*A.size),pre=[...A].sort((a,b)=>(ix.post.get(a)||[]).length-(ix.post.get(b)||[]).length).slice(0,A.size-need+1),seen=new Set();
-  for(const t of pre){for(const i of ix.post.get(t)||[]){if(seen.has(i))continue;seen.add(i);const o=ix.items[i];
-   const v=Math.max(dSim(kx,o.kk),dSim(kx,o.tt),dSim(tx,o.tt));if(v>=.6){res={m:v,t:o.t};break}}if(res)break}}
- dupMemo.set(mk0,res);return res}
+function dup(x){let b=null,m=0;[...(cur().old||[]),...(cur().hist||[]).filter(h=>h.m!=$('#mo').value)].forEach(o=>{const v=Math.max(sim(x.kw,o.k),sim(x.kw,o.t),sim(x.topic,o.t));if(v>m){m=v;b=o.t}});return m>=.6?{m,t:b}:null}
 ['p_s','p_i','p_b','p_m','p_a'].forEach(id=>$('#'+id).oninput=()=>{const p=cur().p||(cur().p={});p.site=$('#p_s').value;p.ind=$('#p_i').value;p.brief=$('#p_b').value;p.m=$('#p_m').value;p.a=$('#p_a').value;save()});
 function parse(t){return t.split(/\r?\n/).filter(l=>l.trim()).map(l=>{const sp=l.includes('\t')?'\t':',',o=[];let c='',q=0;for(const ch of l){if(ch=='"')q=!q;else if(ch==sp&&!q){o.push(c);c=''}else c+=ch}o.push(c);return o.map(v=>v.trim())})}
 function addOld(t){const r=parse(t);if(r.length&&/^(title|topic|keyword|عنوان)/i.test(r[0][0]))r.shift();const o=cur().old||(cur().old=[]);let n=0;
@@ -289,9 +273,9 @@ const fromIdea=r=>({id:r.id,topic:r.topic,kw:r.kw,sec:r.secondary_kw||'',intent:
 function fromRow(r){const c={id:r.id,i:[],old:[],hist:[],q:r.quotas,pins:r.pins||[],p:{ind:r.industry||'',site:r.website||'',brief:r.brief||'',m:r.target_market||'',a:r.target_audience||'',voice:r.brand_voice||'',prod:r.products_services||'',goals:r.goals||'',notes:r.notes||'',social:r.social||{},colors:r.brand_colors||[],logo:r.logo_path||''},_loaded:0};return c}
 async function allRows(t,cid){let o=[],k=0;for(;;){const r=await sb.from(t).select('*').eq('client_id',cid).range(k,k+999);if(r.error)throw r.error;o=o.concat(r.data);if(r.data.length<1000)return o;k+=1000}}
 async function loadClient(n){const c=S.c[n];if(!CLOUD||!c||c._loaded)return;
- const [ideas,past,h]=await Promise.all([allRows('ideas',c.id),allRows('past_content',c.id),sb.from('plan_items').select('plan_id,topic,kw,plans!inner(month,params)').eq('client_id',c.id).limit(3000)]);
+ const [ideas,past,h]=await Promise.all([allRows('ideas',c.id),allRows('past_content',c.id),sb.from('plan_items').select('plan_id,topic,kw,plans!inner(month)').eq('client_id',c.id).limit(3000)]);
  c.i=ideas.map(fromIdea);c.old=past.map(r=>({t:r.title,k:r.keyword||r.title,u:r.url||''}));
- c.hist=(h.data||[]).map(r=>({t:r.topic,k:r.kw||r.topic,m:r.plans&&r.plans.month,p:r.plan_id,man:!!(r.plans&&r.plans.params&&r.plans.params.manual)}));
+ c.hist=(h.data||[]).map(r=>({t:r.topic,k:r.kw||r.topic,m:r.plans&&r.plans.month,p:r.plan_id}));
  c._si=new Map(c.i.map(x=>[x.id,JSON.stringify(toRow(x,c.id))]));c._so=new Set(c.old.map(o=>o.t));c._loaded=1}
 async function openClient(n){try{setSv('Loading…');await loadClient(n);setSv('');S.cur=n;plan=[];curPlanId=null;renderAll();prof();showView('w');document.querySelector('.tabs button').click()}catch(e){setSv('Could not load: '+(e.message||e),1)}}
 // --- saving (automatic, a moment after each change) ---
@@ -344,10 +328,11 @@ function legacy(d){let n=0;Object.entries(d.c).forEach(([nm,cl])=>{let k=nm;whil
 // --- profile tab ---
 const parseSo=t=>{const o={};t.split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{const m=l.match(/^([^:\/]+):\s*(\S.*)$/);if(m&&!/^https?$/i.test(m[1]))o[m[1].trim()]=m[2].trim();else o[l]=l});return o};
 const fmtSo=o=>Object.entries(o||{}).map(([k,v])=>k==v?k:k+': '+v).join('\n');
-function pfFill(p){$('#p_v').value=p.voice||'';$('#p_pr').value=p.prod||'';$('#p_g').value=p.goals||'';$('#p_nt').value=p.notes||'';socRender();$('#p_co').value=(p.colors||[]).join(', ');sws(p)}
+function pfFill(p){$('#p_v').value=p.voice||'';$('#p_pr').value=p.prod||'';$('#p_g').value=p.goals||'';$('#p_nt').value=p.notes||'';$('#p_so').value=fmtSo(p.social);$('#p_co').value=(p.colors||[]).join(', ');sws(p)}
 const sws=p=>$('#sws').innerHTML=(p.colors||[]).map(c=>`<span class="sw" style="background:${esc(c)}" title="${esc(c)}"></span>`).join(' ');
 const pm={p_v:'voice',p_pr:'prod',p_g:'goals',p_nt:'notes'};
 Object.keys(pm).forEach(id=>$('#'+id).oninput=()=>{const p=cur().p||(cur().p={});p[pm[id]]=$('#'+id).value;save()});
+$('#p_so').oninput=()=>{const p=cur().p||(cur().p={});p.social=parseSo($('#p_so').value);save()};
 $('#p_co').oninput=()=>{const p=cur().p||(cur().p={});p.colors=$('#p_co').value.split(',').map(s=>s.trim()).filter(Boolean);save();sws(p)};
 async function ensureId(){const c=cur();if(!c.id){clearTimeout(tm);await syncAll()}return c.id}
 async function pfLoad(){const loc='<span class="mu">Available in the live (database) version.</span>';
@@ -375,63 +360,34 @@ $('#aw').onclick=async()=>{const p=cur().p||{};if(!CLOUD)return alert('Auto-fill
   $('#aok').onclick=()=>{const v=k=>$('#awo [data-s='+k+']').value.trim();const q=cur().p||(cur().p={});if(v('industry'))q.ind=v('industry');if(v('brief'))q.brief=v('brief');if(v('market'))q.m=v('market');if(v('audience'))q.a=v('audience');if(v('voice'))q.voice=v('voice');save();prof();$('#awo').innerHTML='<span class="mu">Applied and saved.</span>'}}
  catch(e){$('#awo').innerHTML='<span class="wr">Auto-fill failed: '+esc(e.message||'error')+'</span>'}};
 // --- saved plan history ---
-const U36=/^[0-9a-f-]{36}$/;
-const itemRow=(x,i,c)=>({week:x.wk,sort_order:i,topic:x.topic,kw:x.kw,intent:x.intent,format:x.format,cluster:x.cluster,lang:x.lang,why:x.why||null,refresh:!!x.refresh,pinned:(c.pins||[]).includes(x.id),analysis:x.an||null,optimized:x.ob||null});
-function rebuildHist(c){c.hist=(c.plans||[]).flatMap(p=>(p.items||[]).map(x=>({t:x.topic,k:x.kw||x.topic,m:p.month,p:p.id,man:!!(p.params&&p.params.manual)})))}
-function planSave(isNew){if(isNew)curPlanId=null;clearTimeout(pt);pt=setTimeout(async()=>{try{const c=cur();if(!c)return;const mo=$('#mo').value||new Date().toISOString().slice(0,7);
-  if(!CLOUD){if(!plan.length&&!curPlanId)return;c.plans=c.plans||[];
-   if(!curPlanId){curPlanId=uid();c.plans.unshift({id:curPlanId,month:mo,name:S.cur+' '+mo,created:new Date().toISOString(),params:{n:+$('#n').value,r:+$('#r').value,lg:$('#lg').value},items:[]})}
-   const p=c.plans.find(z=>z.id==curPlanId);if(p){p.items=plan.map((x,i)=>({...itemRow(x,i,c),idea_id:U36.test(x.id)?x.id:null}));rebuildHist(c);save();setSv('Plan saved to history')}return}
-  if(!plan.length){if(curPlanId)await sb.from('plan_items').delete().eq('plan_id',curPlanId);return}
-  await ensureId();await syncAll();
+function planSave(isNew){if(!CLOUD)return;if(isNew)curPlanId=null;clearTimeout(pt);pt=setTimeout(async()=>{try{if(!plan.length)return;const c=cur();await ensureId();await syncAll();const mo=$('#mo').value||new Date().toISOString().slice(0,7);
   if(!curPlanId){curPlanId=uid();const r=await sb.from('plans').insert({id:curPlanId,client_id:c.id,month:mo,name:S.cur+' '+mo,params:{n:+$('#n').value,r:+$('#r').value,lg:$('#lg').value,q:c.q}});if(r.error){curPlanId=null;throw r.error}}
   const d=await sb.from('plan_items').delete().eq('plan_id',curPlanId);if(d.error)throw d.error;
-  const r2=await sb.from('plan_items').insert(plan.map((x,i)=>({...itemRow(x,i,c),plan_id:curPlanId,client_id:c.id,idea_id:U36.test(x.id)?x.id:null})));
+  const U=/^[0-9a-f-]{36}$/,r2=await sb.from('plan_items').insert(plan.map((x,i)=>({plan_id:curPlanId,client_id:c.id,idea_id:U.test(x.id)?x.id:null,week:x.wk,sort_order:i,topic:x.topic,kw:x.kw,intent:x.intent,format:x.format,cluster:x.cluster,lang:x.lang,why:x.why||null,refresh:!!x.refresh,pinned:(c.pins||[]).includes(x.id),analysis:x.an||null,optimized:x.ob||null})));
   if(r2.error)throw r2.error;const pid=curPlanId;c.hist=(c.hist||[]).filter(h=>h.p!=pid).concat(plan.map(x=>({t:x.topic,k:x.kw||x.topic,m:mo,p:pid})));setSv('Plan saved to history')}catch(e){setSv('Plan save failed: '+(e.message||e),1)}},700)}
 {const g=gen;gen=function(){g();planSave(true)};const w=swap;swap=function(i){w(i);planSave()};const n=pin;pin=function(i){n(i);planSave()}}
-async function plansList(){if(CLOUD){const id=await ensureId();const r=await sb.from('plans').select('id,month,name,created_at,params,plan_items(count)').eq('client_id',id).order('created_at',{ascending:false});return(r.data||[]).map(p=>({id:p.id,month:p.month,name:p.name,created:p.created_at,count:(p.plan_items&&p.plan_items[0]&&p.plan_items[0].count)||0}))}
- return(cur().plans||[]).map(p=>({id:p.id,month:p.month,name:p.name,created:p.created,count:(p.items||[]).length}))}
-async function planItems(pid){if(CLOUD)return(await sb.from('plan_items').select('*').eq('plan_id',pid).order('sort_order')).data||[];const p=(cur().plans||[]).find(z=>z.id==pid);return p?p.items:[]}
-async function hsLoad(){const c=cur(),P=await plansList();
- $('#hl').innerHTML='<div class="card" style="margin:0 0 10px"><b>Add a plan</b> <span class="mu">paste an old plan, one title per line (a keyword may follow after a comma or tab). It joins your saved history, so new ideas never repeat it.</span><div class="row" style="margin:6px 0">Month <input type="month" id="hm"> <input id="hn" placeholder="Plan name (optional)"></div><textarea id="ht" rows="4" style="width:100%" dir="auto"></textarea><button class="p" id="hadd" style="margin-top:6px">Add to saved plans</button></div>'+
- (P.map(p=>`<div class="row" style="margin:4px 0"><b>${esc(p.month)}</b><span dir="auto">${esc(p.name||'')}</span><span class="mu">${new Date(p.created).toLocaleString()}</span><span class="tag">${p.count} items</span><button data-o="${p.id}">Open</button><button data-d="${p.id}">Duplicate</button><button data-x="${p.id}">CSV</button><button data-hd="${p.id}">Delete</button></div>`).join('')||'<span class="mu">No saved plans yet. Generate one in Monthly plan, or add an old plan above.</span>');
- $('#hm').value=new Date().toISOString().slice(0,7);const H=$('#hl');
- $('#hadd').onclick=async()=>{const rows=parse($('#ht').value).filter(a=>a[0]);if(!rows.length)return alert('Paste at least one title');const mo=$('#hm').value||new Date().toISOString().slice(0,7),nid=uid(),name=$('#hn').value.trim()||('Added plan '+mo);
-  const items=rows.map((a,i)=>({week:Math.floor(i*4/rows.length)+1,sort_order:i,topic:a[0],kw:a[1]||a[0],intent:detect(a[1]||a[0]),format:'how-to guide',cluster:'General',lang:isAr(a[0])?'AR':'EN',why:'Added manually',refresh:false,pinned:false}));
-  if(CLOUD){const id=await ensureId(),r=await sb.from('plans').insert({id:nid,client_id:id,month:mo,name,params:{manual:true}});if(r.error)return alert(r.error.message);
-   for(let k=0;k<items.length;k+=200){const r2=await sb.from('plan_items').insert(items.slice(k,k+200).map(x=>({...x,plan_id:nid,client_id:id})));if(r2.error)return alert(r2.error.message)}
-   c.hist=(c.hist||[]).concat(items.map(x=>({t:x.topic,k:x.kw,m:mo,p:nid,man:true})))}
-  else{(c.plans=c.plans||[]).unshift({id:nid,month:mo,name,created:new Date().toISOString(),params:{manual:true},items});rebuildHist(c);save()}
-  setSv(items.length+' titles added to saved plans');hsLoad()};
- H.querySelectorAll('[data-hd]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this saved plan? Its titles will no longer count as old content.'))return;const pid=b.dataset.hd;
-  if(CLOUD){const r=await sb.from('plans').delete().eq('id',pid);if(r.error)return alert(r.error.message);c.hist=(c.hist||[]).filter(h=>h.p!=pid)}else{c.plans=(c.plans||[]).filter(z=>z.id!=pid);rebuildHist(c);save()}
-  if(curPlanId==pid){curPlanId=null;plan=[]}setSv('Plan deleted');hsLoad()});
- H.querySelectorAll('[data-o]').forEach(b=>b.onclick=async()=>{const it=await planItems(b.dataset.o),p=P.find(z=>z.id==b.dataset.o);
-  plan=it.map((x,i)=>{const j=c.i.find(y=>y.id==x.idea_id)||{};return{id:x.idea_id||'h'+(x.id||b.dataset.o+i),topic:x.topic,kw:x.kw,intent:x.intent,format:x.format,cluster:x.cluster,lang:x.lang,why:x.why,refresh:x.refresh,wk:x.week,an:x.analysis||undefined,ob:x.optimized||undefined,stage:stage(x.intent),vol:j.vol||0,kd:j.kd||0}});
+async function hsLoad(){if(!CLOUD){$('#hl').innerHTML='<span class="mu">Plan history is saved in the live (database) version.</span>';return}
+ const id=await ensureId();const r=await sb.from('plans').select('id,month,name,created_at,params,plan_items(count)').eq('client_id',id).order('created_at',{ascending:false});
+ $('#hl').innerHTML=(r.data||[]).map(p=>`<div class="row" style="margin:4px 0"><b>${esc(p.month)}</b><span class="mu">${new Date(p.created_at).toLocaleString()}</span><span class="tag">${(p.plan_items&&p.plan_items[0]&&p.plan_items[0].count)||0} items</span><button data-o="${p.id}">Open</button><button data-d="${p.id}">Duplicate</button><button data-x="${p.id}">CSV</button></div>`).join('')||'<span class="mu">No saved plans yet. Generate one in Monthly plan.</span>';
+ const L=async pid=>(await sb.from('plan_items').select('*').eq('plan_id',pid).order('sort_order')).data||[];
+ $('#hl').querySelectorAll('[data-o]').forEach(b=>b.onclick=async()=>{const c=cur(),it=await L(b.dataset.o),p=(r.data||[]).find(z=>z.id==b.dataset.o);
+  plan=it.map(x=>{const i=c.i.find(y=>y.id==x.idea_id)||{};return{id:x.idea_id||'h'+x.id,topic:x.topic,kw:x.kw,intent:x.intent,format:x.format,cluster:x.cluster,lang:x.lang,why:x.why,refresh:x.refresh,wk:x.week,an:x.analysis||undefined,ob:x.optimized||undefined,stage:stage(x.intent),vol:i.vol||0,kd:i.kd||0}});
   curPlanId=b.dataset.o;if(p)$('#mo').value=p.month;document.querySelector('[data-t=b]').click()});
- H.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{const it=await planItems(b.dataset.d),p=P.find(z=>z.id==b.dataset.d),nid=uid();
-  if(CLOUD){const a=await sb.from('plans').insert({id:nid,client_id:c.id,month:p.month,name:(p.name||'')+' (copy)',params:{}});if(a.error)return alert(a.error.message);
-   await sb.from('plan_items').insert(it.map(({id:_,plan_id:__,created_at:___,...x})=>({...x,plan_id:nid})))}
-  else{c.plans.unshift({id:nid,month:p.month,name:(p.name||'')+' (copy)',created:new Date().toISOString(),params:{},items:JSON.parse(JSON.stringify(it))});rebuildHist(c);save()}hsLoad()});
- H.querySelectorAll('[data-x]').forEach(b=>b.onclick=async()=>{const it=await planItems(b.dataset.x),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ $('#hl').querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{const it=await L(b.dataset.d),p=(r.data||[]).find(z=>z.id==b.dataset.d),nid=uid();
+  const a=await sb.from('plans').insert({id:nid,client_id:id,month:p.month,name:(p.name||'')+' (copy)',params:p.params});if(a.error)return alert(a.error.message);
+  await sb.from('plan_items').insert(it.map(({id:_,plan_id:__,created_at:___,...x})=>({...x,plan_id:nid})));hsLoad()});
+ $('#hl').querySelectorAll('[data-x]').forEach(b=>b.onclick=async()=>{const it=await L(b.dataset.x),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
   dl('plan-history.csv','\ufeff'+['week,topic,keyword,intent,format,cluster,lang,why'].concat(it.map(x=>[x.week,x.topic,x.kw,INT[x.intent]||x.intent,x.format,x.cluster,x.lang,x.why].map(q).join(','))).join('\n'),'text/csv')})}
 // ===== STAGE 3B: competitors, team page, EN/AR =====
 const caShow=(a,t)=>$('#cao').innerHTML=a?`<div class="card" dir="auto"><b>Latest AI analysis</b> <span class="mu">${t?new Date(t).toLocaleDateString():''}</span><p>${esc(a.summary)}</p><b>Content gaps</b><ul>${(a.gaps||[]).map(g=>`<li>${esc(g)}</li>`).join('')}</ul><b>Opportunities</b><ul>${(a.opportunities||[]).map(g=>`<li>${esc(g)}</li>`).join('')}</ul></div>`:'';
-const cpOpen=new Set();
-async function cpRows(){if(CLOUD){const id=await ensureId();const r=await sb.from('competitors').select('*').eq('client_id',id).order('priority',{ascending:false}).order('name');return r.data||[]}return(cur().cmp||[]).slice().sort((a,b)=>(!!b.priority-!!a.priority)||a.name.localeCompare(b.name))}
-async function cpUpd(id,k,v){if(CLOUD){const r=await sb.from('competitors').update({[k]:v}).eq('id',id);if(r.error)return alert(r.error.message)}else{const x=(cur().cmp||[]).find(y=>y.id==id);if(x){x[k]=v;save()}}setSv('Competitor saved')}
-async function cpLoad(){const rows=await cpRows();
- $('#cpl').innerHTML=rows.map(x=>`<details class="card" data-cp="${x.id}" dir="auto" ${cpOpen.has(x.id)?'open':''}><summary><b>${esc(x.name)}</b> ${x.priority?'⭐':''} <span class="mu">${esc(x.website||'')}</span></summary><div class="row" style="margin-top:8px"><input data-f="name" value="${esc(x.name)}"><input data-f="website" value="${esc(x.website)}" placeholder="Website"><label><input type="checkbox" data-f="priority" ${x.priority?'checked':''}> ⭐ Priority</label><button data-dc="${x.id}">Delete</button></div>`+[['content_focus','Content focus'],['strengths','Strengths'],['weaknesses','Weaknesses'],['notes','Notes']].map(([f,l])=>`<textarea data-f="${f}" rows="2" placeholder="${l}" style="width:100%;margin-top:6px">${esc(x[f])}</textarea>`).join('')+`<textarea data-f="social" rows="2" placeholder="Social links, one per line" style="width:100%;margin-top:6px">${esc(fmtSo(x.social))}</textarea></details>`).join('')||'<div class="card mu">No competitors yet. Add the first one above, then add as many as you like.</div>';
- $('#cpl').querySelectorAll('[data-f]').forEach(e=>e.onchange=async()=>{const k=e.dataset.f,v=e.type=='checkbox'?e.checked:k=='social'?parseSo(e.value):e.value;await cpUpd(e.closest('[data-cp]').dataset.cp,k,v);if(k=='priority')cpLoad()});
- $('#cpl').querySelectorAll('details[data-cp]').forEach(d=>d.ontoggle=()=>{d.open?cpOpen.add(d.dataset.cp):cpOpen.delete(d.dataset.cp)});
- $('#cpl').querySelectorAll('[data-dc]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this competitor?'))return;if(CLOUD)await sb.from('competitors').delete().eq('id',b.dataset.dc);else{cur().cmp=(cur().cmp||[]).filter(y=>y.id!=b.dataset.dc);save()}setSv('Competitor deleted');cpLoad()});
- if(CLOUD){const c=await sb.from('clients').select('competitor_analysis,competitor_analysis_at').eq('id',cur().id).single();caShow(c.data&&c.data.competitor_analysis,c.data&&c.data.competitor_analysis_at)}}
-$('#cpe').onclick=()=>document.querySelectorAll('#cpl details[data-cp]').forEach(d=>d.open=true);$('#cpc').onclick=()=>document.querySelectorAll('#cpl details[data-cp]').forEach(d=>d.open=false);
-$('#cadd').onclick=async()=>{const n=$('#c_n').value.trim();if(!n)return alert('Enter the competitor name');const w=$('#c_w').value.trim(),nid=uid();cpOpen.add(nid);
- if(CLOUD){const r=await sb.from('competitors').insert({id:nid,client_id:await ensureId(),name:n,website:w||null});if(r.error)return alert(r.error.message)}
- else{(cur().cmp||(cur().cmp=[])).push({id:nid,name:n,website:w,content_focus:'',strengths:'',weaknesses:'',notes:'',social:{},priority:false});save()}
- $('#c_n').value='';$('#c_w').value='';setSv('Competitor saved');cpLoad();$('#c_n').focus()};
-['c_n','c_w'].forEach(i=>$('#'+i).onkeydown=e=>{if(e.key=='Enter')$('#cadd').click()});
+async function cpLoad(){if(!CLOUD){$('#cpl').innerHTML='<div class="card mu">Competitors are saved in the live (database) version.</div>';return}
+ const id=await ensureId();const [r,c]=await Promise.all([sb.from('competitors').select('*').eq('client_id',id).order('priority',{ascending:false}).order('name'),sb.from('clients').select('competitor_analysis,competitor_analysis_at').eq('id',id).single()]);
+ $('#cpl').innerHTML=(r.data||[]).map(x=>`<div class="card" data-cp="${x.id}" dir="auto"><div class="row"><input data-f="name" value="${esc(x.name)}"><input data-f="website" value="${esc(x.website)}" placeholder="Website"><label><input type="checkbox" data-f="priority" ${x.priority?'checked':''}> ⭐ Priority</label><button data-dc="${x.id}">Delete</button></div>`+[['content_focus','Content focus'],['strengths','Strengths'],['weaknesses','Weaknesses'],['notes','Notes']].map(([f,l])=>`<textarea data-f="${f}" rows="2" placeholder="${l}" style="width:100%;margin-top:6px">${esc(x[f])}</textarea>`).join('')+`<textarea data-f="social" rows="2" placeholder="Social links, one per line" style="width:100%;margin-top:6px">${esc(fmtSo(x.social))}</textarea></div>`).join('')||'<div class="card mu">No competitors yet.</div>';
+ $('#cpl').querySelectorAll('[data-f]').forEach(e=>e.onchange=async()=>{const k=e.dataset.f,v=e.type=='checkbox'?e.checked:k=='social'?parseSo(e.value):e.value,x=await sb.from('competitors').update({[k]:v}).eq('id',e.closest('[data-cp]').dataset.cp);if(x.error)alert(x.error.message);else if(k=='priority')cpLoad()});
+ $('#cpl').querySelectorAll('[data-dc]').forEach(b=>b.onclick=async()=>{if(confirm('Delete this competitor?')){await sb.from('competitors').delete().eq('id',b.dataset.dc);cpLoad()}});
+ caShow(c.data&&c.data.competitor_analysis,c.data&&c.data.competitor_analysis_at)}
+$('#cadd').onclick=async()=>{if(!CLOUD)return alert('Competitors are saved in the live (database) version.');const n=$('#c_n').value.trim();if(!n)return alert('Enter the competitor name');
+ const r=await sb.from('competitors').insert({client_id:await ensureId(),name:n,website:$('#c_w').value.trim()||null});if(r.error)return alert(r.error.message);$('#c_n').value='';$('#c_w').value='';cpLoad()};
 $('#ca').onclick=async()=>{if(!CLOUD)return alert('This uses the secure AI server of the live version.');const id=await ensureId();$('#cao').innerHTML='<span class="mu">Analyzing competitors…</span>';
  try{const data=await aiCall('competitors',{client_id:id});const at=new Date().toISOString();
   const u=await sb.from('clients').update({competitor_analysis:data,competitor_analysis_at:at}).eq('id',id);if(u.error)throw u.error;caShow(data,at)}
@@ -463,33 +419,6 @@ function applyLang(){const ar=LANG=='ar';document.documentElement.dir=ar?'rtl':'
 new MutationObserver(()=>{if(LANG=='ar'){cancelAnimationFrame(raf);raf=requestAnimationFrame(applyLang)}}).observe(document.body,{childList:true,subtree:true});
 $('#lgb').onclick=()=>{LANG=LANG=='ar'?'en':'ar';try{localStorage.setItem('cp_lang',LANG)}catch(e){}$('#lgb').textContent=LANG=='ar'?'English':'عربي';applyLang()};
 $('#lgb').textContent=LANG=='ar'?'English':'عربي';
-// ---- free idea engine (no AI): builds NEW ideas from the client's profile and old content, skipping duplicates ----
-const STOP=new Set('the a an of for in to and or is are with on your you my how what best top price cost guide vs near me why when في من على إلى عن مع هل ما هو هي كيف أفضل افضل سعر اسعار أسعار تكلفة طريقة دليل الفرق بين لماذا متى'.split(' '));
-const core=(t,m)=>{const M=new Set((m||'').toLowerCase().split(/\s+/));return t.toLowerCase().replace(/[?؟:,.،()"'“”]/g,' ').split(/\s+/).filter(x=>x&&!STOP.has(x)&&!M.has(x)).slice(0,4).join(' ')};
-function seeds(c,m,lg){const cnt={},add=(s,w)=>{s=s.trim();if(s.length>2)cnt[s]=(cnt[s]||0)+w};
- ((c.p||{}).prod||'').split(/[\n,;،]/).forEach(x=>add(x.toLowerCase(),5));
- [...(c.old||[]).map(o=>o.k||o.t),...(c.hist||[]).map(h=>h.k),...c.i.map(i=>i.kw)].forEach(t=>{const k=core(t,m);if(k)add(k,1)});
- const seen=new Set();return Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(e=>e[0]).filter(x=>{const k=x.replace(/s\b/g,'');if(seen.has(k))return false;seen.add(k);return true}).filter(x=>!lg||lg=='AUTO'||lg=='BOTH'||(lg=='AR')==isAr(x)).slice(0,14)}
-const TPL={EN:{info:[['how to choose {x}','how-to guide'],['what is {x}','glossary'],['{x}: a complete guide','how-to guide'],['common mistakes to avoid with {x}','listicle'],['{x} checklist','checklist'],['when do you need {x}?','FAQ'],['{x}: frequently asked questions','FAQ']],comm:[['best {x} in {m}','roundup'],['{x} compared: how to choose between your options','comparison'],['questions to ask before choosing {x}','checklist'],['{x} reviews: what to look for','roundup']],trans:[['{x} price in {m}','listicle'],['how much does {x} cost?','how-to guide'],['book {x} in {m}','how-to guide']],nav:[['why choose {c} for {x}','opinion'],['{x} at {c}: how we work','case study']]},
-AR:{info:[['كيف تختار {x}','how-to guide'],['ما هو {x}؟','glossary'],['دليل {x} الشامل','how-to guide'],['أخطاء شائعة عند {x}','listicle'],['قائمة مراجعة {x}','checklist'],['متى تحتاج إلى {x}؟','FAQ'],['أسئلة شائعة عن {x}','FAQ']],comm:[['أفضل {x} في {m}','roundup'],['مقارنة بين خيارات {x}','comparison'],['أسئلة يجب أن تسألها قبل اختيار {x}','checklist'],['تقييم {x}: ما الذي يجب البحث عنه','roundup']],trans:[['سعر {x} في {m}','listicle'],['كم تكلفة {x}؟','how-to guide'],['احجز {x} في {m}','how-to guide']],nav:[['لماذا تختار {c} من أجل {x}','opinion'],['{x} في {c}: كيف نعمل','case study']]}};
-let genL=[];
-function ngInfo(){const c=cur(),e=$('#ngu');if(!c||!e)return;const O=c.old||[],H=c.hist||[],all=O.map(o=>o.k||o.t).concat(H.map(h=>h.k)),a=all.filter(x=>isAr(x||'')).length;
- e.textContent=`Saved for this client: ${O.length} past content titles, ${H.length} earlier plan items, ${c.i.length} ideas${all.length?` · past content: ${a} Arabic, ${all.length-a} English`:''}${(c.p||{}).prod?' · products listed':''}. You never need to add them again.`}
-function makeIdeas(){ngInfo();const c=cur(),p=c.p||{},n=Math.min(60,+$('#ng').value||20),lg=$('#ngl').value,m=(p.m||'').split(/[,،]/)[0].trim(),o=$('#ngo');
- const S=seeds(c,m,lg);
- if(!S.length){const all=seeds(c,m,'BOTH'),nA=all.filter(isAr).length,nE=all.length-nA;o.innerHTML=all.length?`<div class="wr">No ${lg=='AR'?'Arabic':'English'} topics found. Your saved content for this client has ${nA} Arabic and ${nE} English topics. Set Language to ${nA?'Arabic':'English'}, Both or Auto.</div>`:'<div class="wr">Nothing saved for this client yet. Add old content plans (Past content plans), earlier plans (Plan history) or the client’s products in Profile, then try again.</div>';return}
- const cand=[];S.forEach((x,si)=>{const L=isAr(x)?'AR':'EN';Object.keys(INT).forEach(k=>TPL[L][k].forEach(([pat,fm],ti)=>{let t=pat.replace('{x}',x).replace('{c}',S_NAME());t=m?t.replace('{m}',m):t.replace(/ (in|في) \{m\}/,'');if(L=='EN')t=t[0].toUpperCase()+t.slice(1);
-  cand.push({topic:t,kw:t.toLowerCase().replace(/[?؟:]/g,'').trim(),intent:k,format:fm,cluster:x[0].toUpperCase()+x.slice(1),lang:L,ti,si})}))});
- cand.sort((a,b)=>a.ti-b.ti||a.si-b.si);
- const have=[...c.i.map(i=>i.kw),...(c.old||[]).map(x=>x.k),...(c.old||[]).map(x=>x.t)],out=[];
- const ok=x=>!dup(x)&&!have.some(h=>h.toLowerCase()==x.kw||sim(x.kw,h)>=.6)&&!out.some(y=>y.kw==x.kw||sim(x.kw,y.kw)>=.85);
- const q=c.q||{};for(const k in INT){const t=Math.round(n*(q[k]||0)/100);let g=0;for(const x of cand){if(g>=t||out.length>=n)break;if(x.intent==k&&ok(x)){out.push(x);g++}}}
- for(const x of cand){if(out.length>=n)break;if(!out.includes(x)&&ok(x))out.push(x)}
- genL=out;
- o.innerHTML=out.length?`<div class="mu" style="margin:6px 0">${out.length} new ideas. None overlap your old content or existing ideas. Untick any you don’t want.</div><div class="sc"><table>`+out.map((x,i)=>`<tr><td><input type="checkbox" data-g="${i}" checked></td><td dir="auto">${esc(x.topic)}</td><td>${INT[x.intent]}</td><td>${esc(x.format)}</td><td dir="auto">${esc(x.cluster)}</td></tr>`).join('')+'</table></div><button class="p" id="nga" style="margin-top:6px">Add selected to Idea bank</button>':'<div class="wr">Everything this tool could suggest already overlaps your old content or ideas. Add more products/services in Profile or try the other language.</div>';
- const b=$('#nga');if(b)b.onclick=()=>{let k=0;o.querySelectorAll('[data-g]:checked').forEach(e=>{const x=genL[+e.dataset.g];cur().i.unshift(mk(x.topic,x.kw,x.intent,x.format,x.cluster,x.lang,0,0,'','idea','generated'));k++});save();tbl();o.innerHTML='<div class="mu">'+k+' ideas added to the Idea bank.</div>'}}
-const S_NAME=()=>S.cur;
-$('#ngb').onclick=makeIdeas;
 $('#gp').onclick=async()=>{const c=cur(),p=c.p||{},n=+$('#gn').value||20,lg=$('#gnl').value;
  let comp='';if(CLOUD&&c.id){const r=await sb.from('competitors').select('name,website,content_focus,strengths,weaknesses,priority').eq('client_id',c.id).limit(10);comp=(r.data||[]).map(x=>`- ${x.name} (${x.website||'n/a'}) focus: ${x.content_focus||'n/a'}; strengths: ${x.strengths||'n/a'}; weaknesses: ${x.weaknesses||'n/a'}${x.priority?' [priority]':''}`).join('\n')}
  const have=c.i.slice(0,150).map(x=>x.kw).join(' | ')||'none',past=[...(c.old||[]),...(c.hist||[])].slice(0,150).map(x=>x.t).join(' | ')||'none',q=c.q||{},L=lg=='AR'?'Arabic':lg=='EN'?'English':'a mix of English and Arabic (tag each row EN or AR)';
@@ -500,7 +429,6 @@ ${comp||'none provided'}
 ALREADY IN MY IDEA BANK (do not repeat): ${have}
 ALREADY PUBLISHED / PAST PLANS (do not repeat or closely overlap): ${past}
 RULES:
-- First search the web for this client's market: current trends, what competitors write about, and the questions people ask. Use what you find.
 - Language: ${L}.
 - Cover all search intents roughly like this: informational ${q.info}%, commercial ${q.comm}%, transactional ${q.trans}%, brand ${q.nav}%.
 - Vary the formats and angles, and group ideas into topic clusters.
@@ -510,23 +438,6 @@ topic,keyword,intent,format,cluster,language,volume,kd,position,status
 Then one row per idea. Put text in double quotes if it contains commas. intent must be one of: informational, commercial, transactional, brand. format must be one of: ${FM.join(', ')}. language must be EN or AR. Leave volume, kd and position empty. status is always: idea.`;
  $('#gpo').value=t;$('#gpo').hidden=false;
  try{await navigator.clipboard.writeText(t);alert('Request copied. Paste it into claude.ai.')}catch(e){$('#gpo').select();alert('Select the text in the box, copy it, and paste it into claude.ai.')}};
-// ---- social accounts (any platform, any link) ----
-const SOC=['Facebook','Instagram','YouTube','LinkedIn','TikTok','X (Twitter)','Pinterest','Snapchat','Threads','WhatsApp','Telegram','Website','Other'];
-const soList=o=>Array.isArray(o)?o:Object.entries(o||{}).map(([k,v])=>({platform:k==v?'Other':k,url:v}));
-function socRender(){const p=cur().p||(cur().p={}),L=p.social=soList(p.social);
- $('#p_soc').innerHTML=L.map((x,i)=>`<div class="row" style="margin:4px 0"><select data-sp="${i}">${opt(SOC,SOC.includes(x.platform)?x.platform:'Other')}</select><input data-su="${i}" value="${esc(x.url)}" placeholder="https://…" style="flex:1" dir="ltr">${/^https?:\/\//.test(x.url)?`<a href="${esc(x.url)}" target="_blank" rel="noopener">Open</a>`:''}<button data-sx="${i}" title="Remove">✕</button></div>`).join('')||'<span class="mu">No social accounts yet.</span>';
- $('#p_soc').querySelectorAll('[data-sp]').forEach(e=>e.onchange=()=>{L[+e.dataset.sp].platform=e.value;save()});
- $('#p_soc').querySelectorAll('[data-su]').forEach(e=>e.onchange=()=>{L[+e.dataset.su].url=e.value.trim();save();socRender()});
- $('#p_soc').querySelectorAll('[data-sx]').forEach(b=>b.onclick=()=>{L.splice(+b.dataset.sx,1);save();socRender()})}
-$('#p_soa').onclick=()=>{const p=cur().p||(cur().p={});p.social=soList(p.social);p.social.push({platform:'Facebook',url:''});save();socRender()};
-function removeFromPlan(id){const i=plan.findIndex(z=>z.id==id);if(i<0)return;plan.splice(i,1);if(!plan.length)lastWhy=null;planSave();show()}
-// ---- Arabic briefs: Arabic ideas get Arabic headings, links, CTA and reasons ----
-const xAr=x=>x.lang=='AR'||isAr(x.topic||'');
-const INTA={info:'معلوماتي',comm:'تجاري',trans:'شرائي',nav:'العلامة التجارية'};
-const FMA={'how-to guide':'دليل إرشادي',listicle:'قائمة',comparison:'مقارنة','case study':'دراسة حالة',glossary:'مصطلحات',opinion:'مقال رأي',FAQ:'أسئلة شائعة',checklist:'قائمة مراجعة',template:'قالب',roundup:'تجميعة'};
-const OUTA={'how-to guide':['ما الذي تحتاجه','الخطوات بالتفصيل','أخطاء شائعة','الأدوات والتكاليف'],listicle:['مقدمة ومعايير الاختيار','العناصر مع المميزات والعيوب','كيف تختار الأنسب','الخلاصة'],comparison:['نظرة سريعة على الخيارات','جدول المقارنة','لمن يناسب كل خيار','الخلاصة والتوصية'],'case study':['العميل والتحدي','الحل والمنهج','النتائج بالأرقام','الدروس المستفادة'],glossary:['التعريف','لماذا يهم؟','أمثلة','مصطلحات ذات صلة'],opinion:['الفكرة الرئيسية','الأدلة','الردود على الاعتراضات','الخلاصة'],FAQ:['أهم الأسئلة','إجابات مختصرة ومباشرة','مصادر ذات صلة'],checklist:['لمن هذه القائمة','القائمة','أخطاء يجب تجنبها','الخطوات التالية'],template:['ما الذي يتضمنه القالب','كيفية الاستخدام','مثال مكتمل'],roundup:['نطاق التغطية','أبرز العناصر المختارة','أهم الاتجاهات']};
-const CTAA={awareness:'اشترك أو اقرأ الدليل المرتبط',consideration:'حمّل المورد أو اطلع على دراسات الحالة',decision:'احجز استشارة أو اطلب عرض سعر'};
-const whyAr=w=>String(w||'').replace('Score','الدرجة').replace(/Informational|Commercial|Transactional|Brand/,m=>({Informational:'معلوماتي',Commercial:'تجاري',Transactional:'شرائي',Brand:'العلامة التجارية'}[m])).replace('quota','حصة').replace('filled after quotas (best remaining)','أُضيفت بعد استيفاء الحصص (الأفضل المتبقي)').replace('Pinned by you','📌 مثبّتة من طرفك').replace('Swapped in','تم استبدالها').replace('Refresh slot: declining or outdated post','خانة تحديث: مقال متراجع أو قديم');
-if(CLOUD)boot();else{Object.values(S.c).forEach(c=>c.plans&&rebuildHist(c));prof();renderAll();showView('w')}
+if(CLOUD)boot();else{prof();renderAll();showView('w')}
 applyLang();
 </script></main></body></html>
