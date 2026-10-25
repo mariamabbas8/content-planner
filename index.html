@@ -204,7 +204,20 @@ $('#ex').onclick=async()=>{if(CLOUD){setSv('Preparing export…');for(const n in
 $('#im').onclick=()=>$('#fi').click();
 $('#fi').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.c)throw 0;if(CLOUD)return legacy(d);S=d;save();plan=[];renderAll()}catch(x){alert('Invalid backup file')}})};
 // ---- client profile + old plan ----
-function dup(x){let b=null,m=0;[...(cur().old||[]),...(cur().hist||[]).filter(h=>h.m!=$('#mo').value)].forEach(o=>{const v=Math.max(sim(x.kw,o.k),sim(x.kw,o.t),sim(x.topic,o.t));if(v>m){m=v;b=o.t}});return m>=.6?{m,t:b}:null}
+let dupIx=null,dupKey='',dupMemo=new Map();
+const dTk=s=>new Set(String(s||'').toLowerCase().split(/\s+/).filter(Boolean));
+const dSim=(A,B)=>{let n=0;for(const t of A)if(B.has(t))n++;return n/(A.size+B.size-n||1)};
+function dupBuild(){const c=cur(),mo=$('#mo').value,O=c.old||[],H=c.hist||[],key=S.cur+'|'+O.length+'|'+H.length+'|'+mo+'|'+((O[0]||{}).t||'')+'|'+((O[O.length-1]||{}).t||'');
+ if(dupIx&&key==dupKey)return dupIx;dupKey=key;dupMemo=new Map();
+ const items=[...O,...H.filter(h=>h.m!=mo)].map(o=>({t:o.t,kk:dTk(o.k),tt:dTk(o.t)})),post=new Map();
+ items.forEach((it,i)=>{for(const t of new Set([...it.kk,...it.tt])){let a=post.get(t);if(!a)post.set(t,a=[]);a.push(i)}});
+ return dupIx={items,post}}
+function dup(x){const ix=dupBuild(),mk0=(x.kw||'')+'\u0001'+(x.topic||'');if(dupMemo.has(mk0))return dupMemo.get(mk0);
+ const kx=dTk(x.kw),tx=dTk(x.topic);let res=null;
+ for(const A of [kx,tx]){if(res||!A.size)continue;const need=Math.ceil(.6*A.size),pre=[...A].sort((a,b)=>(ix.post.get(a)||[]).length-(ix.post.get(b)||[]).length).slice(0,A.size-need+1),seen=new Set();
+  for(const t of pre){for(const i of ix.post.get(t)||[]){if(seen.has(i))continue;seen.add(i);const o=ix.items[i];
+   const v=Math.max(dSim(kx,o.kk),dSim(kx,o.tt),dSim(tx,o.tt));if(v>=.6){res={m:v,t:o.t};break}}if(res)break}}
+ dupMemo.set(mk0,res);return res}
 ['p_s','p_i','p_b','p_m','p_a'].forEach(id=>$('#'+id).oninput=()=>{const p=cur().p||(cur().p={});p.site=$('#p_s').value;p.ind=$('#p_i').value;p.brief=$('#p_b').value;p.m=$('#p_m').value;p.a=$('#p_a').value;save()});
 function parse(t){return t.split(/\r?\n/).filter(l=>l.trim()).map(l=>{const sp=l.includes('\t')?'\t':',',o=[];let c='',q=0;for(const ch of l){if(ch=='"')q=!q;else if(ch==sp&&!q){o.push(c);c=''}else c+=ch}o.push(c);return o.map(v=>v.trim())})}
 function addOld(t){const r=parse(t);if(r.length&&/^(title|topic|keyword|عنوان)/i.test(r[0][0]))r.shift();const o=cur().old||(cur().old=[]);let n=0;
