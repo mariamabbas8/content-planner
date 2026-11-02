@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Content Planner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--tx:#1d1d1b;--mu:#6b6b66;--bd:#e2e0d8;--ac:#0f6e56;--ac2:#e1f5ee;--wr:#b4540a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171716;--card:#222220;--tx:#eeede8;--mu:#9b9a93;--bd:#383835;--ac:#3fc19b;--ac2:#12332a;--wr:#f0a35e}}
+:root[data-theme="dark"]{--bg:#171716;--card:#222220;--tx:#eeede8;--mu:#9b9a93;--bd:#383835;--ac:#3fc19b;--ac2:#12332a;--wr:#f0a35e}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0}header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}header .sp{flex:1}
+input,select,textarea,button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;max-width:100%}
+button{cursor:pointer}button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.tabs{display:flex;gap:4px;margin-bottom:12px}.tabs button.on{background:var(--ac2);border-color:var(--ac);color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.row input[type=number]{width:70px}
+.sc{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:start;padding:5px 6px;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{color:var(--mu);font-weight:500;cursor:pointer}.mu{color:var(--mu)}.wr{color:var(--wr)}
+.tag{background:var(--ac2);color:var(--ac);border-radius:4px;padding:1px 6px;font-size:12px}
+.bar{display:flex;align-items:center;gap:6px;margin:3px 0}.bar i{display:block;height:10px;background:var(--ac);border-radius:3px}.bar span:first-child{width:130px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+details{border-bottom:1px solid var(--bd);padding:6px 0}summary{cursor:pointer}
+.lay{display:grid;grid-template-columns:270px 1fr;gap:12px}@media(max-width:800px){.lay{grid-template-columns:1fr}}main{max-width:1300px}#cll{max-height:260px;overflow:auto}.cb{display:block;width:100%;text-align:start;margin:2px 0}.cb.on{background:var(--ac2);border-color:var(--ac);color:var(--ac)}aside textarea,aside input{box-sizing:border-box}
+.lay[hidden],#cpg[hidden]{display:none}.cc:hover{border-color:var(--ac)}.modal{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9;padding:16px}.modal[hidden]{display:none}.sw{display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid var(--bd);vertical-align:middle}
+.bmo{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px;z-index:60}.bmo[hidden]{display:none}.bmi{background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:14px;width:min(860px,100%)}
+@media print{.tabs,header,.noprint{display:none}}
+</style></head><body><main>
+<header><h1>Content Planner</h1><button id="vc">Clients</button><button id="tmb" hidden>Team</button><span class="sp"></span>
+<button id="ex">Export JSON</button><button id="im">Import JSON</button><input type="file" id="fi" accept=".json" hidden><button id="lgb">عربي</button><span class="mu" id="sv"></span><span class="mu" id="who"></span><button id="lo" hidden>Sign out</button></header>
+<div id="cpg" hidden><div class="card"><div class="row"><b>Clients</b><input id="cq" placeholder="Search clients…" style="flex:1"><select id="cf"></select><button class="p" id="cn2">+ New client</button></div></div><div class="g" id="cgrid"></div></div>
+<div id="bm" class="bmo" hidden><div class="bmi"><div class="row" style="justify-content:space-between"><b>📝 Headings &amp; meta: <span id="bmt"></span></b><button id="bmx">✕ Close</button></div>
+<div class="card" style="margin-top:8px"><b>1.</b> Copy the request, paste it into claude.ai and send it.<div class="row" style="margin-top:6px"><button class="p" id="bmc">Copy request</button><a href="https://claude.ai/new" target="_blank" rel="noopener"><button type="button">Open claude.ai ↗</button></a></div><textarea id="bmr" rows="4" style="width:100%;margin-top:6px" readonly hidden></textarea></div>
+<div class="card"><b>2.</b> Copy Claude’s whole answer (copy button under the reply) and paste it here.<textarea id="bma" rows="5" style="width:100%;margin-top:6px" placeholder="Paste Claude’s answer here"></textarea><div class="row" style="margin-top:6px"><button class="p" id="bms">Save headings &amp; meta</button><span id="bme"></span></div></div>
+<div id="bmp"></div></div></div>
+<div id="login" class="modal" hidden><div class="card" style="text-align:center;max-width:380px"><h1>Content Planner</h1><p class="mu" id="lm">Invite-only. Sign in with the Google account your admin invited.</p><button class="p" id="gl">Sign in with Google</button></div></div>
+<div id="tmv" hidden><div class="card"><div class="row"><b>Team</b><span style="flex:1"></span><button id="tcl">Copy invite link</button></div>
+<div class="row" style="margin-top:8px"><input id="ie" type="email" placeholder="Email to invite" style="flex:1"><select id="ir"><option value="editor">Editor</option><option value="admin">Admin</option></select><button class="p" id="ia">Invite</button></div>
+<p class="mu">Invited people open the invite link and sign in with that Google account.</p></div>
+<div class="card"><b>Invites</b><div id="til"></div></div><div class="card"><b>People</b><div id="tpl"></div></div></div>
+<div class="lay"><aside><div class="card"><b>Clients</b><div class="row" style="margin:6px 0"><input id="cs" placeholder="Search clients…" style="flex:1"><button id="nc" title="New client">+ New</button></div><div id="cll"></div></div>
+<div class="card"><b>Client profile</b>
+<input id="p_n" placeholder="Client name" style="width:100%;margin:6px 0"><input id="p_i" placeholder="Industry" style="width:100%;margin-bottom:6px"><input id="p_s" placeholder="Website" style="width:100%;margin-bottom:6px">
+<textarea id="p_b" rows="3" placeholder="Brief overview" style="width:100%;margin-bottom:6px" dir="auto"></textarea><input id="p_m" placeholder="Target market (e.g. Egypt, Gulf)" style="width:100%;margin-bottom:6px" dir="auto"><textarea id="p_a" rows="2" placeholder="Target audience" style="width:100%;margin-bottom:6px" dir="auto"></textarea>
+<button id="dc">Delete client</button></div></aside><div style="min-width:0">
+<div class="tabs"><button data-t="a" class="on">Idea bank</button><button data-t="b">Monthly plan</button><button data-t="ap">Auto plan</button><button data-t="c">Dashboard</button><button data-t="pf">Profile</button><button data-t="kr">Keyword research</button><button data-t="mk">Market research</button><button data-t="cp">Competitors</button><button data-t="hs">Plan history</button></div>
+
+<section id="a">
+<div class="card"><div class="row" id="af"></div></div>
+<div class="card"><b>Bulk paste</b> <span class="mu">one keyword per line; intent is auto-suggested (EN + AR), editable in the table</span>
+<textarea id="bk" rows="3" style="width:100%;margin:6px 0" dir="auto"></textarea>
+<div class="row"><select id="bl"><option>EN</option><option>AR</option></select><button id="bb">Add keywords</button></div></div>
+<div class="card"><b>Create new ideas from my content</b> <span class="mu">free and built in: uses the client profile and old content, and skips anything already covered</span>
+<div class="row" style="margin:6px 0">How many <input type="number" id="ng" value="20" min="5" max="60"> Language <select id="ngl"><option value="AUTO">Auto (match my content)</option><option value="AR">Arabic</option><option value="EN">English</option><option value="BOTH">Both</option></select><button class="p" id="ngb">Create ideas</button></div><div class="mu" id="ngu"></div><div id="ngo"></div>
+<div class="mu">New ideas come with no search volume. Add it later from Search Console or a keyword tool.</div></div>
+<div class="card"><b>Get ideas for this client</b> <span class="mu">free: the tool writes the request, claude.ai writes the ideas</span>
+<div class="row" style="margin:6px 0">How many <input type="number" id="gn" value="20" min="5" max="60"> Language <select id="gnl"><option value="AR">Arabic</option><option value="EN">English</option><option value="BOTH">Both</option></select><button class="p" id="gp">Copy ideas request</button><a href="https://claude.ai/new" target="_blank" rel="noopener"><button type="button">Open claude.ai</button></a></div>
+<textarea id="gpo" rows="3" style="width:100%" readonly hidden></textarea>
+<div class="mu">1) Click Copy ideas request. 2) Paste it into claude.ai and send. 3) Copy Claude's reply, paste it in the Bulk paste box below, and click "Import pasted rows".</div></div>
+<div class="card"><b>Import</b><div class="row" style="margin-top:6px"><button id="bp">Import pasted rows above (Sheets/CSV)</button><button id="imu" hidden>Undo last import</button><label>CSV or Excel file <input type="file" id="fc" accept=".csv,.tsv,.txt,.xlsx,.xls,.xlsm"></label><label>GSC queries export <input type="file" id="fg" accept=".csv,.tsv,.txt,.xlsx,.xls,.xlsm"></label></div>
+<div class="mu">CSV columns (header row optional): topic, keyword, intent, format, cluster, language, volume, kd, position, status. GSC: export the Queries table from Performance.</div></div>
+<div class="card"><div class="row"><input id="q" placeholder="Search…"><select id="fi2"></select><select id="fs"></select><span class="mu" id="cnt"></span><button id="dsel" hidden>Delete selected</button><button id="cbad">Remove unreadable rows</button></div>
+<div class="sc"><table id="tb"></table></div></div></section>
+
+<section id="b" hidden>
+<div class="card"><b>Past content plans (Google Sheets)</b> <span class="mu">In Google Sheets select the old plan cells, copy, and paste here (title, keyword, URL: keyword and URL optional) or upload a CSV. New ideas and generated plans are checked against it, and overlaps are flagged.</span>
+<textarea id="ob" rows="4" style="width:100%;margin:6px 0" dir="auto"></textarea>
+<div class="row"><button class="p" id="oa">Add to old plan</button><input type="file" id="of" accept=".csv,.tsv,.txt,.xlsx,.xls,.xlsm"><button id="oc">Clear old plan</button><span class="mu" id="oi"></span></div>
+<div class="sc" style="margin-top:8px"><table id="ot"></table></div></div>
+<div class="card"><div class="row">Month <input type="month" id="mo"> Posts <input type="number" id="n" value="8" min="1"> Refresh slots <input type="number" id="r" value="1" min="0"> Language <select id="lg"><option value="all">All</option><option>EN</option><option>AR</option></select></div>
+<div class="row" style="margin-top:8px">Intent quota %: <span id="qs" class="row"></span> <button class="p" id="go">Generate plan</button> <button id="csv" class="noprint">Export CSV</button> <button id="tsv" class="noprint">Copy for Google Sheets</button> <button onclick="print()" class="noprint">Print</button> <button id="aa" class="noprint">Analyze all with AI</button></div></div>
+<div id="out"></div></section>
+
+<section id="c" hidden><div class="g" id="dash"></div></section>
+<section id="pf" hidden>
+<div class="card"><div class="row"><b>More profile details</b><span style="flex:1"></span><button id="aw">Auto-fill from website (AI)</button></div><div id="awo"></div>
+<textarea id="p_v" rows="2" placeholder="Brand voice and tone" style="width:100%;margin-top:8px" dir="auto"></textarea>
+<textarea id="p_pr" rows="2" placeholder="Products / services" style="width:100%;margin-top:6px" dir="auto"></textarea>
+<div style="margin-top:8px"><div class="row"><b>Social media accounts</b><button id="p_soa">+ Add social account</button></div><div id="p_soc"></div></div>
+<div class="row" style="margin-top:6px"><input id="p_co" placeholder="Brand colors, comma separated (#0f6e56, #ffffff)" style="flex:1"><span id="sws"></span></div>
+<textarea id="p_g" rows="2" placeholder="Goals" style="width:100%;margin-top:6px" dir="auto"></textarea>
+<textarea id="p_nt" rows="2" placeholder="Notes" style="width:100%;margin-top:6px" dir="auto"></textarea></div>
+<div class="card" id="fcard"><b>Logo and attachments</b><div class="row" style="margin:6px 0"><label>Logo <input type="file" id="lfi" accept="image/*"></label><label>Attachments <input type="file" id="afi" multiple></label></div><div id="fl"></div></div>
+<div class="card" id="kcard"><div class="row"><b>KPIs</b><span class="mu">optional</span><button id="ka">+ Add KPI</button></div><div id="kl"></div></div>
+</section>
+<section id="ap" hidden>
+<div class="card"><b>Step 1 · Suggest new topics</b> <span class="mu">from the client’s products, old content clusters, competitors’ articles and live Google searches</span>
+<div class="row" style="margin-top:8px">Language <select id="s1l"><option value="AUTO">Auto (match my content)</option><option value="AR">Arabic</option><option value="EN">English</option><option value="BOTH">Both</option></select><button class="p" id="s1b">Suggest topics</button><input id="s1a" placeholder="Or type your own topic" dir="auto" style="flex:1"><button id="s1ab">+ Add topic</button></div>
+<div id="s1o" style="margin-top:8px"></div></div>
+<div class="card"><b>Step 2 · SERP analysis</b> <span class="mu">top 10 results, the top 5 ranking pages read in full, winning headings, questions and notes for each topic you ticked</span>
+<div class="row" style="margin-top:8px"><button class="p" id="s2b">Analyze SERP for ticked topics</button><span class="mu" id="s2p"></span></div><div id="s2o" style="margin-top:8px"></div></div>
+<div class="card"><b>Step 3 · Ideas and plan</b> <span class="mu">ideas built from the headings, questions and notes you ticked</span>
+<div class="row" style="margin-top:8px"><button class="p" id="s3b">Create ideas from my choices</button></div><div id="s3o" style="margin-top:8px"></div></div>
+<div class="card" style="padding:8px 12px"><b>Do everything automatically</b> <span class="mu">one click, no choices: the card below runs all steps by itself</span></div>
+<div class="card"><b>Auto plan</b> <span class="mu">one click: analyzes this client’s old content plans, researches the live market on Google, reads the pages that rank in search results, checks competitors’ sites, then builds a new monthly plan from those insights</span>
+<div class="row" style="margin-top:8px">Month <input type="month" id="apm"> Posts <input type="number" id="apn" value="8" min="2" max="30"> Language <select id="apl"><option value="AUTO">Auto (match my content)</option><option value="AR">Arabic</option><option value="EN">English</option><option value="BOTH">Both</option></select> Depth <select id="apd"><option value="3">Normal (about 1–2 min)</option><option value="5">Deep (about 3 min)</option></select></div>
+<div style="margin-top:8px"><label class="mu">Topics to research, one per line. Filled in from your old content and products; edit them if you like.</label><textarea id="apt" rows="4" style="width:100%" dir="auto"></textarea></div>
+<div class="row"><button class="p" id="apb">Create plan automatically</button></div>
+<div class="mu" style="margin-top:6px">Search results and competitor sites are read through the free Jina Reader service, so your search topics pass through it. Competitors come from the Competitors tab.</div></div>
+<div id="app"></div><div id="apo"></div></section>
+<section id="kr" hidden>
+<div class="card"><b>Keyword research</b> <span class="mu">finds what people search on Google around your seeds, groups it into topics, removes what you already have, and checks Google’s first page for the best new topics</span>
+<div style="margin-top:8px"><label class="mu">Seed keywords, one per line (filled in from the client’s products and old content; edit freely)</label><textarea id="krs" rows="4" style="width:100%" dir="auto"></textarea></div>
+<div class="row">Market <select id="krm"><option value="eg">Egypt</option><option value="sa">Saudi Arabia</option><option value="ae">UAE</option><option value="us">USA</option><option value="gb">UK</option></select>
+Depth <select id="krd"><option value="1">Normal (questions and buying words)</option><option value="2">Deep (+ every letter, more long-tail)</option></select>
+Google check <select id="krn"><option value="10">Top 10 new topics (about 1 min)</option><option value="15">Top 15 new topics</option><option value="0">Skip</option></select>
+<label><input type="checkbox" id="krc" checked> Include competitors’ articles</label><button class="p" id="krgo">Find keywords</button></div></div>
+<div id="krp"></div><div id="kro"></div></section>
+<section id="mk" hidden>
+<div class="card"><b>Market research</b> <span class="mu">live: reads what people are typing into Google right now for a topic, then shows the questions, buying signals and gaps your content does not cover yet</span>
+<div class="row" style="margin-top:8px"><input id="mks" placeholder="Topic, e.g. تبييض الاسنان or dental implants" style="flex:1" dir="auto" list="mksl"><datalist id="mksl"></datalist>
+<select id="mkm"><option value="ar|eg">Arabic · Egypt</option><option value="ar|sa">Arabic · Saudi Arabia</option><option value="ar|ae">Arabic · UAE</option><option value="en|eg">English · Egypt</option><option value="en|ae">English · UAE</option><option value="en|us">English · USA</option><option value="en|gb">English · UK</option></select>
+<select id="mkd"><option value="1">Normal depth</option><option value="2">Deep (more searches)</option></select>
+<button class="p" id="mkb">Analyze market</button></div>
+<div class="row mu" style="margin-top:6px" id="mkl"></div></div>
+<div id="mko"></div></section>
+<section id="cp" hidden><div class="card"><div class="row"><b>Competitors</b><span style="flex:1"></span><button id="cpe">Expand all</button><button id="cpc">Collapse all</button><button id="ca">Analyze competitors with AI</button></div>
+<div class="row" style="margin-top:8px"><input id="c_n" placeholder="Competitor name"><input id="c_w" placeholder="Website"><button class="p" id="cadd">+ Add competitor</button></div><div id="cao"></div></div><div id="cpl"></div></section>
+<section id="hs" hidden><div class="card"><b>Saved plans</b> <span class="mu">every generated plan is saved automatically</span><div id="hl" style="margin-top:8px"></div></div></section></div></div>
+
+<script>
+// ===== PASTE YOUR TWO SUPABASE VALUES HERE (Stage 5). Leave empty to run in local mode. =====
+const SUPA_URL="https://iqvqsaskaiowsvumeqjk.supabase.co",SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxdnFzYXNrYWlvd3N2dW1lcWprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0MzMzMTIsImV4cCI6MjEwODAwOTMxMn0._BCn3-V2zJvBIMDWDSREJc6wZAsfv_-119JLm5_FAcw";
+const CLOUD=!!(SUPA_URL&&SUPA_KEY&&window.supabase);
+const uid=()=>crypto.randomUUID?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c=="x"?r:r&3|8).toString(16)});
+const INT={info:'Informational',comm:'Commercial',trans:'Transactional',nav:'Brand'};
+const W={info:1,comm:1.5,trans:2,nav:.8}; // intent weights: tune per client
+const FM=['how-to guide','listicle','comparison','case study','glossary','opinion','FAQ','checklist','template','roundup'];
+const ST=['idea','planned','briefed','published','needs refresh'];
+const OUT={'how-to guide':['What you need','Step-by-step process','Common mistakes','Tools & costs'],listicle:['Intro & criteria','Items 1-N with pros/cons','How to choose','Summary'],comparison:['Options at a glance','Comparison table','Who each is best for','Verdict'],'case study':['Client & challenge','Approach','Results with numbers','Lessons'],glossary:['Definition','Why it matters','Examples','Related terms'],opinion:['Thesis','Evidence','Counter-arguments','Takeaway'],FAQ:['Top questions (from PAA)','Short direct answers','Related resources'],checklist:['Who it is for','The checklist','Pitfalls','Next steps'],template:['What is included','How to use it','Example filled in'],roundup:['Scope','Curated entries','Key trends']};
+const CTA={awareness:'Subscribe / read related guide',consideration:'Download resource / see case studies',decision:'Book a consultation / get a quote'};
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const stage=i=>i=='info'?'awareness':i=='comm'?'consideration':'decision';
+function detect(k){ // keyword-pattern intent rules
+ if(/(buy|price|cost|near me|book|quote|سعر|أسعار|اسعار|شراء|تكلفة|حجز|قريب)/i.test(k))return'trans';
+ if(/(best|vs|review|compare|top |alternative|أفضل|افضل|مقارنة)/i.test(k))return'comm';
+ return'info'}
+const isAr=s=>/[\u0600-\u06FF]/.test(s);
+const seed=`Dental implant cost in Egypt|dental implant cost|trans|comparison|Implants|EN|1900|35||idea
+How to care for dental implants|dental implant care|info|how-to guide|Implants|EN|800|20|12|idea
+What is a dental implant|what is a dental implant|info|glossary|Implants|EN|2400|40|8|idea
+Best dental clinics in Cairo|best dental clinic cairo|comm|roundup|Brand|EN|1500|45||idea
+Invisalign vs braces|invisalign vs braces|comm|comparison|Orthodontics|EN|1300|38|18|idea
+How long do braces take|how long do braces take|info|FAQ|Orthodontics|EN|900|25|6|idea
+Teeth whitening price|teeth whitening price|trans|listicle|Cosmetic|EN|1100|30||idea
+Teeth whitening at home: safe or not|teeth whitening at home|info|opinion|Cosmetic|EN|1700|33|15|idea
+Veneers case study: smile makeover|veneers before after|comm|case study|Cosmetic|EN|600|22||idea
+Book a dental check-up|book dentist appointment|trans|checklist|Brand|EN|500|18|3|idea
+Pre-dental-visit checklist|dental visit checklist|info|checklist|General|EN|300|10||idea
+Root canal pain: what to expect|root canal pain|info|how-to guide|General|EN|2100|42|22|idea
+Root canal guide (old post)|root canal treatment|info|how-to guide|General|EN|1200|40|14|needs refresh
+Gum disease glossary|gingivitis meaning|info|glossary|General|EN|1000|30|9|published
+كيف أعتني بزراعة الأسنان|كيف اعتني بزراعة الاسنان|info|how-to guide|Implants|AR|700|15||idea
+سعر تقويم الأسنان في مصر|سعر تقويم الاسنان في مصر|trans|listicle|Orthodontics|AR|2600|28|11|idea
+أفضل عيادة أسنان في القاهرة|افضل عيادة اسنان في القاهرة|comm|roundup|Brand|AR|1800|40||idea
+ما هو حشو العصب|ما هو حشو العصب|info|glossary|General|AR|1500|25|7|idea
+تبييض الأسنان: الأسعار والنتائج|تبييض الاسنان|comm|comparison|Cosmetic|AR|3200|36|13|idea
+حجز موعد مع دكتور أسنان|حجز دكتور اسنان|trans|checklist|Brand|AR|900|20||idea
+أسئلة شائعة عن عدسات الأسنان|عدسات الاسنان|info|FAQ|Cosmetic|AR|1400|27||idea
+قصة نجاح ابتسامة هوليود|ابتسامة هوليود|comm|case study|Cosmetic|AR|1100|31||idea
+Pediatric dentist: when to start|pediatric dentist when to start|info|how-to guide|Kids|EN|450|14||idea
+Dental implant price (draft)|dental implant price|trans|listicle|Implants|EN|1600|34||idea`;
+function mk(t,k,i,f,cl,l,v,d,p,s,src){return{id:uid(),topic:t,kw:k,intent:i,format:f,cluster:cl||'General',lang:l,vol:+v||0,kd:+d||0,pos:p===''||p==null?'':+p,url:'',status:s||'idea',stage:stage(i),src:src||'brainstorm'}}
+function init(){const i=seed.split('\n').map(r=>{const a=r.split('|');return mk(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9])});return{cur:'Demo dental clinic',c:{'Demo dental clinic':{i,q:{info:40,comm:30,trans:20,nav:10}}}}}
+let S;if(!CLOUD){try{S=JSON.parse(localStorage.getItem('cp1'))}catch(e){}if(!S||!S.c)S=init()}else S={cur:'',c:{}};
+const save=()=>{if(CLOUD){queueSync();return}try{localStorage.setItem('cp1',JSON.stringify(S))}catch(e){}};
+const cur=()=>S.c[S.cur];let lastWhy=null,lastPool=[],plan=[],flags=[],sortK='',sortD=1;
+const opt=(a,sel)=>a.map(x=>`<option ${x==sel?'selected':''}>${x}</option>`).join('');
+const iopt=sel=>Object.entries(INT).map(([k,v])=>`<option value="${k}" ${k==sel?'selected':''}>${v}</option>`).join('');
+
+function renderAll(){ cls();
+ $('#af').innerHTML=`<input id="f_t" placeholder="Topic / title" dir="auto"><input id="f_k" placeholder="Primary keyword" dir="auto"><select id="f_i">${iopt('info')}</select><select id="f_f">${opt(FM)}</select><input id="f_c" placeholder="Cluster" size="10"><select id="f_l"><option>EN</option><option>AR</option></select><input id="f_v" type="number" placeholder="Vol"><input id="f_d" type="number" placeholder="KD"><input id="f_p" type="number" placeholder="Pos"><button class="p" id="f_a">Add idea</button>`;
+ $('#fi2').innerHTML='<option value="">All intents</option>'+iopt('');$('#fs').innerHTML='<option value="">All statuses</option>'+opt(ST);
+ $('#qs').innerHTML=Object.entries(INT).map(([k,v])=>`${v} <input type="number" data-q="${k}" value="${cur().q[k]}">`).join(' ');
+ $('#f_a').onclick=()=>{const t=$('#f_t').value.trim(),k=$('#f_k').value.trim();if(!t||!k)return alert('Topic and keyword are required');
+  const x=mk(t,k,$('#f_i').value,$('#f_f').value,$('#f_c').value.trim(),$('#f_l').value,$('#f_v').value,$('#f_d').value,$('#f_p').value);cur().i.unshift(x);save();['f_t','f_k'].forEach(i=>$('#'+i).value='');tbl()};
+ document.querySelectorAll('[data-q]').forEach(e=>e.onchange=()=>{cur().q[e.dataset.q]=+e.value||0;save()});tbl()}
+
+function tbl(){setTimeout(ngInfo,0);const q=$('#q').value.toLowerCase(),fi=$('#fi2').value,fs=$('#fs').value;
+ let a=cur().i.filter(x=>(!q||(x.topic+x.kw+x.cluster).toLowerCase().includes(q))&&(!fi||x.intent==fi)&&(!fs||x.status==fs));
+ if(sortK)a.sort((x,y)=>(x[sortK]>y[sortK]?1:-1)*sortD);
+ const H=[['topic','Topic'],['kw','Keyword'],['intent','Intent'],['format','Format'],['cluster','Cluster'],['lang','Lang'],['vol','Vol'],['kd','KD'],['pos','Pos'],['status','Status']];
+ $('#cnt').textContent=a.length+' of '+cur().i.length;
+ $('#tb').innerHTML='<tr><th><input type="checkbox" id="sall" title="Select all shown"></th>'+H.map(h=>`<th data-s="${h[0]}">${h[1]}</th>`).join('')+'<th>Old plan overlap</th><th></th></tr>'+(a.length?a.map(x=>`<tr><td><input type="checkbox" data-sel="${x.id}" ${selIds.has(x.id)?'checked':''}></td><td dir="auto">${esc(x.topic)}</td><td dir="auto">${esc(x.kw)}</td><td><select data-id="${x.id}" data-f="intent">${iopt(x.intent)}</select></td><td>${esc(x.format)}</td><td>${esc(x.cluster)}</td><td>${x.lang}</td><td>${x.vol}</td><td>${x.kd}</td><td>${x.pos}</td><td><select data-id="${x.id}" data-f="status">${opt(ST,x.status)}</select></td><td class="wr" dir="auto">${x.status!='published'&&dup(x)?'⚠ '+esc(dup(x).t):''}</td><td style="white-space:nowrap"><button data-br="${x.id}" title="Headings &amp; meta">📝${x.ob&&x.ob.src=='claude'?'✨':''}</button> <button data-del="${x.id}">✕</button></td></tr>`).join(''):'<tr><td colspan="13" class="mu">No ideas yet. Add one above or paste keywords.</td></tr>');
+ $('#tb').querySelectorAll('[data-sel]').forEach(e=>e.onchange=()=>{e.checked?selIds.add(e.dataset.sel):selIds.delete(e.dataset.sel);selUpd()});const sa=$('#sall');if(sa)sa.onchange=()=>{a.forEach(x=>sa.checked?selIds.add(x.id):selIds.delete(x.id));tbl();selUpd()};
+ $('#tb').querySelectorAll('[data-br]').forEach(b=>b.onclick=()=>openBrief(b.dataset.br));
+ $('#tb').querySelectorAll('[data-s]').forEach(h=>h.onclick=()=>{sortD=sortK==h.dataset.s?-sortD:1;sortK=h.dataset.s;tbl()});
+ $('#tb').querySelectorAll('select').forEach(s=>s.onchange=()=>{const x=cur().i.find(y=>y.id==s.dataset.id);x[s.dataset.f]=s.value;if(s.dataset.f=='intent')x.stage=stage(s.value);save()});
+ $('#tb').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{cur().i=cur().i.filter(y=>y.id!=b.dataset.del);save();tbl()})}
+
+// ---- Planning engine (deterministic) ----
+// opportunity = volume * intentWeight * rankingGap / (difficulty+1)
+function score(x){const g=x.pos===''?1.5:x.pos<=4?.5:x.pos<=20?2:1.2; // quick wins at 5-20
+ return x.vol*W[x.intent]*g/(x.kd+1)}
+const tok=k=>new Set(k.toLowerCase().split(/\s+/).filter(Boolean));
+function sim(a,b){const A=tok(a),B=tok(b);let n=0;A.forEach(t=>B.has(t)&&n++);return n/(A.size+B.size-n||1)}
+function gen(){const c=cur(),n=+$('#n').value||0,r=+$('#r').value||0,lg=$('#lg').value;
+ const ok=x=>lg=='all'||x.lang==lg;
+ const pool=c.i.filter(x=>ok(x)&&['idea','planned','briefed'].includes(x.status)).map(x=>({...x,s:score(x)})).sort((a,b)=>b.s-a.s);
+ const ref=c.i.filter(x=>ok(x)&&x.status=='needs refresh').map(x=>({...x,s:score(x),refresh:1,why:'Refresh slot: declining or outdated post'})).sort((a,b)=>(pins.includes(b.id)-pins.includes(a.id))||b.s-a.s).slice(0,r);
+ lastPool=pool;lastWhy={all:c.i.filter(x=>['idea','planned','briefed'].includes(x.status)).length,lang:pool.length,flag:0};const pins=c.pins||[];const pub=c.i.filter(x=>x.status=='published'),newN=Math.max(0,n-ref.length),ch=[],fl=new Map,used=new Set;
+ const conflict=x=>{const o=dup(x);if(o)return{kw:o.t,old:1};return [...ch,...ref,...pub].find(y=>y.id!=x.id&&(sim(x.kw,y.kw)>=.6||(x.url&&x.url==y.url)))};
+ let rx=false;const take=(x,why)=>{if(ch.includes(x)||ch.length>=newN)return 0;const cf=conflict(x);if(cf){fl.set(x.id,{x,cf});return 0}
+  if(!rx&&used.has(x.cluster+'|'+x.format))return 0;used.add(x.cluster+'|'+x.format);x.why=why;ch.push(x);return 1};
+ pool.filter(x=>pins.includes(x.id)&&ch.length<newN).forEach(x=>{used.add(x.cluster+'|'+x.format);x.why='📌 Pinned by you · score '+x.s.toFixed(1);ch.push(x)});
+ for(const k in INT){const t=Math.round(newN*(c.q[k]||0)/100);let got=0;for(const x of pool.filter(y=>y.intent==k)){if(got>=t)break;got+=take(x,'')}
+  ch.filter(x=>x.intent==k&&!x.why).forEach(x=>x.why=`Score ${x.s.toFixed(1)} · ${INT[k]} quota (${got}/${t})`)}
+ for(const x of pool){if(ch.length>=newN)break;take(x,'')}
+ rx=true;for(const x of pool){if(ch.length>=newN)break;take(x,'')}
+ ch.forEach(x=>{if(!x.why)x.why=`Score ${x.s.toFixed(1)} · filled after quotas (best remaining)`});
+ // order: never same format back to back, favour higher score
+ let rest=[...ch,...ref],ord=[];while(rest.length){const p=ord[ord.length-1];const i=rest.findIndex(x=>!p||x.format!=p.format);ord.push(...rest.splice(i<0?0:i,1))}
+ plan=ord.map((x,i)=>({...x,wk:Math.floor(i*4/ord.length)+1}));flags=[...fl.values()];lastWhy.flag=flags.length;show()}
+
+function show(){const c=cur();if(!plan.length){const w=lastWhy;let m='No plan yet. Check your quotas and click Generate. Only ideas with status idea/planned/briefed are eligible.';
+ if(w)m=w.all==0?'No eligible ideas: the Idea bank is empty or every idea is already published. Add ideas with status "idea".':w.lang==0?`None of your ${w.all} eligible ideas match the Language filter. Change <b>Language</b> to All, or check the language of each idea.`:w.flag>0?`${w.lang} ideas matched, but ${w.flag} were skipped because they overlap past content (old plans or earlier plans), so nothing was left to plan. Review the list below, add new ideas, or edit the past content plan.`:'No ideas could be selected. Check that Posts is more than 0.';
+ $('#out').innerHTML='<div class="card wr">'+m+'</div>'+(flags.length?'<div class="card"><b>Skipped as overlapping</b>'+flags.slice(0,40).map(f=>`<div dir="auto">${esc(f.x.topic)} overlaps ${f.cf.old?'past plan item ':''}“${esc(f.cf.kw)}”</div>`).join('')+'</div>':'');return}
+ let h='';for(let w=1;w<=4;w++){const a=plan.filter(x=>x.wk==w);if(!a.length)continue;h+=`<div class="card"><b>Week ${w}</b>`+a.map(x=>{
+  const links=c.i.filter(y=>y.cluster==x.cluster&&y.id!=x.id).slice(0,3).map(y=>y.topic),ar=xAr(x);
+  return `<details><summary dir="auto"><span class="noprint" data-xp="${x.id}" title="Remove from plan" style="cursor:pointer;padding:0 6px;color:var(--wr);font-weight:700">✕</span> ${(c.pins||[]).includes(x.id)?'📌 ':''}<b>${esc(x.topic)}</b> <span class="tag">${ar?INTA[x.intent]:INT[x.intent]}</span> <span class="tag">${esc(ar?(FMA[x.format]||x.format):x.format)}</span> <span class="mu">${x.lang} · ${esc(x.cluster)}</span></summary>
+  <div class="mu" dir="auto">${esc(ar?whyAr(x.why):x.why)}</div><p dir="auto"><b>${ar?'الكلمة المفتاحية:':'Target keyword:'}</b> <span dir="auto">${esc(x.kw)}</span> · ${ar?'الحجم':'vol'} ${x.vol} · ${ar?'الصعوبة':'KD'} ${x.kd}</p>
+  <div id="an-${x.id}">${anHtml(x)}</div><div id="bo-${x.id}">${boHtml(x)}</div><div class="row noprint"><button class="p" data-br="${x.id}">📝 Headings &amp; meta</button><button data-an="${x.id}">Analyze market (AI)</button><button data-bo="${x.id}">Optimize brief (AI)</button><button data-pin="${x.id}">${(c.pins||[]).includes(x.id)?'Unpin':'📌 Pin'}</button>${x.refresh?'':`<button data-sw="${x.id}">↔ Swap</button>`}</div></details>`}).join('')+'</div>'}
+ if(flags.length)h+=`<div class="card"><b class="wr">Cannibalization warnings</b>`+flags.map(f=>`<div dir="auto">${esc(f.x.topic)} overlaps ${f.cf.old?'old plan item ':''}“${esc(f.cf.kw)}”. Merge or refresh instead of a new post.</div>`).join('')+'</div>';
+ $('#out').innerHTML=h;$('#out').querySelectorAll('[data-an]').forEach(b=>b.onclick=()=>analyze(b.dataset.an));const q=(a,f)=>$('#out').querySelectorAll(a).forEach(b=>b.onclick=()=>f(b.dataset[a.slice(6,-1)]));q('[data-bo]',optimize);q('[data-pin]',pin);q('[data-sw]',swap);bindBrief($('#out'));$('#out').querySelectorAll('[data-xp]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();removeFromPlan(b.dataset.xp)})}
+
+function dash(){const a=cur().i;const bars=(t,f,keys)=>{const m={};a.forEach(x=>{const k=f(x);m[k]=(m[k]||0)+1});const mx=Math.max(1,...Object.values(m));return`<div class="card"><b>${t}</b>`+(keys||Object.keys(m)).map(k=>`<div class="bar"><span>${esc(INT[k]||k)}</span><i style="width:${(m[k]||0)/mx*120}px"></i><span>${m[k]||0}</span></div>`).join('')+'</div>'};
+ const cl=[...new Set(a.map(x=>x.cluster))],gaps=cl.map(c=>({c,m:Object.keys(INT).filter(k=>!a.some(x=>x.cluster==c&&x.intent==k))})).filter(g=>g.m.length);
+ $('#dash').innerHTML=bars('Intent',x=>x.intent,Object.keys(INT))+bars('Format',x=>x.format)+bars('Status',x=>x.status,ST)+bars('Cluster',x=>x.cluster)+`<div class="card"><b>Cluster gaps</b>${gaps.map(g=>`<div>${esc(g.c)}: <span class="wr">no ${g.m.map(k=>INT[k].toLowerCase()).join(', ')}</span></div>`).join('')||'<div class="mu">No gaps</div>'}</div>`}
+
+// ---- wiring ----
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x==b));['a','b','c','ap','pf','kr','mk','cp','hs'].forEach(s=>$('#'+s).hidden=s!=b.dataset.t);if(b.dataset.t=='c')dash();if(b.dataset.t=='b')show();if(b.dataset.t=='pf')pfLoad();if(b.dataset.t=='cp')cpLoad();if(b.dataset.t=='mk')mkLoad();if(b.dataset.t=='kr')krLoad();if(b.dataset.t=='ap')apLoad();if(b.dataset.t=='hs')hsLoad()});
+$('#nc').onclick=()=>{const n=(prompt('Client name?')||'').trim();if(!n||S.c[n])return;S.c[n]={i:[],q:{info:40,comm:30,trans:20,nav:10},p:{},old:[],hist:[],_loaded:1};S.cur=n;save();plan=[];curPlanId=null;renderAll();prof();showView('w')};
+$('#bb').onclick=()=>{const l=$('#bk').value.split('\n').map(s=>s.trim()).filter(Boolean);if(!l.length)return;let sk=0;l.forEach(k=>{if(cur().i.some(y=>y.kw.toLowerCase()==k.toLowerCase())){sk++;return}const i=detect(k);cur().i.push(mk(k,k,i,'how-to guide','General',isAr(k)?'AR':$('#bl').value,0,0,'','idea','bulk paste'))});$('#bk').value='';save();tbl();if(sk)alert(sk+' duplicate keyword(s) skipped')};
+['q','fi2','fs'].forEach(i=>$('#'+i).oninput=tbl);$('#go').onclick=()=>gen();
+$('#mo').value=new Date().toISOString().slice(0,7);
+$('#csv').onclick=()=>{if(!plan.length)return alert('Generate a plan first');const h=['week','topic','keyword','intent','format','cluster','lang','why'];
+ const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const t='\ufeff'+[h.join(',')].concat(plan.map(x=>[x.wk,x.topic,x.kw,INT[x.intent],x.format,x.cluster,x.lang,x.why].map(q).join(','))).join('\n');
+ dl('plan-'+$('#mo').value+'.csv',t,'text/csv')};
+function dl(n,t,m){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()}
+$('#ex').onclick=async()=>{if(CLOUD){setSv('Preparing export…');for(const n in S.c)await loadClient(n);setSv('')}dl('content-planner.json',JSON.stringify(S,(k,v)=>k[0]=='_'?undefined:v),'application/json')};
+$('#im').onclick=()=>$('#fi').click();
+$('#fi').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.c)throw 0;if(CLOUD)return legacy(d);S=d;save();plan=[];renderAll()}catch(x){alert('Invalid backup file')}})};
+// ---- client profile + old plan ----
+let dupIx=null,dupKey='',dupMemo=new Map();
+const dTk=s=>new Set(String(s||'').toLowerCase().split(/\s+/).filter(Boolean));
+const dSim=(A,B)=>{let n=0;for(const t of A)if(B.has(t))n++;return n/(A.size+B.size-n||1)};
+function dupBuild(){const c=cur(),mo=$('#mo').value,O=c.old||[],H=c.hist||[],key=S.cur+'|'+O.length+'|'+H.length+'|'+mo+'|'+((O[0]||{}).t||'')+'|'+((O[O.length-1]||{}).t||'');
+ if(dupIx&&key==dupKey)return dupIx;dupKey=key;dupMemo=new Map();
+ const items=[...O,...H.filter(h=>h.man||h.m!=mo)].map(o=>({t:o.t,kk:dTk(o.k),tt:dTk(o.t)})),post=new Map();
+ items.forEach((it,i)=>{for(const t of new Set([...it.kk,...it.tt])){let a=post.get(t);if(!a)post.set(t,a=[]);a.push(i)}});
+ return dupIx={items,post}}
+function dup(x){const ix=dupBuild(),mk0=(x.kw||'')+'\u0001'+(x.topic||'');if(dupMemo.has(mk0))return dupMemo.get(mk0);
+ const kx=dTk(x.kw),tx=dTk(x.topic);let res=null;
+ for(const A of [kx,tx]){if(res||!A.size)continue;const need=Math.ceil(.6*A.size),pre=[...A].sort((a,b)=>(ix.post.get(a)||[]).length-(ix.post.get(b)||[]).length).slice(0,A.size-need+1),seen=new Set();
+  for(const t of pre){for(const i of ix.post.get(t)||[]){if(seen.has(i))continue;seen.add(i);const o=ix.items[i];
+   const v=Math.max(dSim(kx,o.kk),dSim(kx,o.tt),dSim(tx,o.tt));if(v>=.6){res={m:v,t:o.t};break}}if(res)break}}
+ dupMemo.set(mk0,res);return res}
+['p_s','p_i','p_b','p_m','p_a'].forEach(id=>$('#'+id).oninput=()=>{const p=cur().p||(cur().p={});p.site=$('#p_s').value;p.ind=$('#p_i').value;p.brief=$('#p_b').value;p.m=$('#p_m').value;p.a=$('#p_a').value;save()});
+function parse(t){if(Array.isArray(t))return t.filter(r=>r.some(v=>String(v??'').trim())).map(r=>r.map(v=>String(v??'').trim()));return t.split(/\r?\n/).filter(l=>l.trim()).map(l=>{const sp=l.includes('\t')?'\t':(l.split(';').length>l.split(',').length?';':','),o=[];let c='',q=0;for(const ch of l){if(ch=='"')q=!q;else if(ch==sp&&!q){o.push(c);c=''}else c+=ch}o.push(c);return o.map(v=>v.trim())})}
+// ---- file reading: Excel (.xlsx) and CSV/TXT with correct Arabic encoding ----
+let xlP=null;const needX=()=>window.XLSX?Promise.resolve():(xlP=xlP||new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=ok;s.onerror=()=>{xlP=null;no(new Error('Could not load the Excel reader. Check your internet connection, or save the file as CSV.'))};document.head.appendChild(s)}));
+async function readTable(f){const n=f.name.toLowerCase();
+ if(/\.(xlsx|xlsm|xlsb|xls)$/.test(n)){await needX();const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});let best=[];
+  for(const sn of wb.SheetNames){const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:'',raw:false});if(rows.length>best.length)best=rows}return best}
+ const b=new Uint8Array(await f.arrayBuffer());let enc='utf-8';if(b[0]==255&&b[1]==254)enc='utf-16le';else if(b[0]==254&&b[1]==255)enc='utf-16be';
+ let t;try{t=new TextDecoder(enc,{fatal:true}).decode(b)}catch(e){t=new TextDecoder('windows-1256').decode(b)}return t.replace(/^\uFEFF/,'')}
+const fileErr=e=>alert(e&&e.message?e.message:'This file could not be read. Save it as CSV (UTF-8) or .xlsx and try again.');
+function addOld(t){const r=parse(t);let ti=0,ki=1,ui=2;
+ if(r.length&&r[0].some(v=>/title|topic|keyword|focus|url|link|عنوان|موضوع|كلمة|رابط/i.test(v))){const h=r.shift().map(v=>v.toLowerCase()),f=re=>h.findIndex(v=>re.test(v)),a=f(/title|topic|blog|عنوان|موضوع/),b=f(/keyword|focus|كلمة/),u=f(/url|link|رابط/);ti=a>=0?a:(b>=0?b:0);ki=b;ui=u}
+ const o=cur().old||(cur().old=[]),seen=new Set(o.map(y=>y.t));let n=0;
+ r.forEach(a=>{const t=(a[ti]||'').trim();if(!t||seen.has(t))return;seen.add(t);o.push({t,k:(ki>=0&&a[ki])||t,u:(ui>=0&&a[ui])||''});n++});
+ save();oldv();tbl();$('#oi').textContent=n+' added, '+(r.length-n)+' skipped as duplicates/empty'}
+function oldv(){const o=cur().old||[];$('#ot').innerHTML=o.length?'<tr><th>Title</th><th>Keyword</th><th>URL</th></tr>'+o.slice(0,200).map(y=>`<tr><td dir="auto">${esc(y.t)}</td><td dir="auto">${esc(y.k)}</td><td>${esc(y.u)}</td></tr>`).join('')+(o.length>200?`<tr><td class="mu">…and ${o.length-200} more</td></tr>`:''):'<tr><td class="mu">No old content added yet.</td></tr>'}
+function prof(){const p=cur().p||{};$('#p_n').value=S.cur;pfFill(p);$('#p_m').value=p.m||'';$('#p_a').value=p.a||'';$('#p_s').value=p.site||'';$('#p_i').value=p.ind||'';$('#p_b').value=p.brief||'';oldv()}
+$('#oa').onclick=()=>{const t=$('#ob').value;if(!t.trim())return;addOld(t);$('#ob').value=''};
+$('#of').onchange=e=>{const f=e.target.files[0];if(f)readTable(f).then(addOld).catch(fileErr);e.target.value=''};
+$('#oc').onclick=()=>{if(confirm('Clear the old plan for this client?')){cur().old=[];save();oldv();tbl()}};
+$('#tsv').onclick=()=>{if(!plan.length)return alert('Generate a plan first');const t=['Week\tTopic\tKeyword\tIntent\tFormat\tCluster\tLang'].concat(plan.map(x=>[x.wk,x.topic,x.kw,INT[x.intent],x.format,x.cluster,x.lang].join('\t'))).join('\n');
+ navigator.clipboard.writeText(t).then(()=>alert('Copied. Paste into Google Sheets.')).catch(()=>dl('plan.tsv',t,'text/tab-separated-values'))};
+// ---- modal + AI market analysis (needs the 'sample' capability) ----
+function anHtml(x){const a=x.an;if(!a)return'';return `<div class="card" dir="auto"><b>${esc(a.title)}</b><p>${esc(a.direction)}</p><p><b>Target audience:</b> ${esc(a.audience)}<br><b>Target market:</b> ${esc(a.market)}</p><p><b>Market analysis:</b> ${esc(a.analysis)}</p><p><b>Gap to exploit:</b> ${esc(a.gap)}</p><b>Heading structure</b><ul>${(a.headings||[]).map(h=>`<li><b>H2:</b> ${esc(h.h2)}${h.h3&&h.h3.length?'<ul>'+h.h3.map(t=>`<li>H3: ${esc(t)}</li>`).join('')+'</ul>':''}</li>`).join('')}</ul><div class="mu">AI estimate from general knowledge, not live data. Verify demand with a keyword tool.</div></div>`}
+async function analyze(id,quiet){let sm=null;try{sm=CLOUD?{cloud:1}:window.claude?await claude.use('sample'):null}catch(e){}
+ if(!sm){if(!quiet)alert('AI analysis only works when this page is opened from claude.ai.');return 0}
+ const x=plan.find(y=>y.id==id),c=cur(),p=c.p||{},el=$('#an-'+id);el.innerHTML='<span class="mu">Analyzing…</span>';
+ const old=(c.old||[]).slice(0,60).map(o=>o.t).join(' | ')||'none',oth=plan.filter(y=>y.id!=id).map(y=>y.topic).join(' | ');
+ try{const a=CLOUD?await aiCall('analyze',{client_id:c.id,idea:{topic:x.topic,kw:x.kw,intent:INT[x.intent],format:x.format,lang:x.lang},old,oth}):await sm.json(`You are a senior SEO content strategist. Client: ${S.cur}. Website: ${p.site||'n/a'}. Industry: ${p.ind||'n/a'}. Brief: ${p.brief||'n/a'}. Target market: ${p.m||'n/a'}. Target audience: ${p.a||'n/a'}.
+Blog idea: "${x.topic}". Primary keyword: "${x.kw}". Search intent: ${INT[x.intent]}. Format: ${x.format}. Language: ${x.lang=='AR'?'Arabic (write every field in Arabic)':'English'}.
+Old content titles (do NOT repeat or closely overlap): ${old}. Other titles in this month's plan (stay distinct): ${oth}.
+Analyze the market for this topic using general knowledge for the client's market. Do not invent statistics or volumes. Return ONLY JSON: {"title":"improved idea title","direction":"2-3 sentences on angle and approach","audience":"who it targets and their need","market":"geographic and segment target","analysis":"demand, competition type, what usually ranks, seasonality","gap":"what current content misses and how this piece can win","headings":[{"h2":"...","h3":["...","..."]}]} with 5-7 H2s matching the format.`);
+  x.an=a;const i=c.i.find(y=>y.id==id);if(i)i.an=a;save();planSave();el.innerHTML=anHtml(x);return 1}
+ catch(e){el.innerHTML='<span class="wr">Analysis failed: '+esc(e.message||e.code||'error')+'</span>';return e.code=='not_granted'?-1:0}}
+$('#aa').onclick=async()=>{if(!plan.length)return alert('Generate a plan first');for(const x of plan){if(x.an)continue;const r=await analyze(x.id,1);if(r===-1||r===0&&!window.claude)break}};
+// ---- clients list, import, pin/swap, brief optimization ----
+function cls(){const q=($('#cs').value||'').toLowerCase();$('#cll').innerHTML=Object.keys(S.c).filter(n=>n.toLowerCase().includes(q)).map(n=>`<button class="cb ${n==S.cur?'on':''}" data-c="${esc(n)}" dir="auto">${esc(n)}<br><span class="mu">${esc((S.c[n].p||{}).ind||'')}</span></button>`).join('')||'<div class="mu">No match</div>';
+ $('#cll').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>openClient(b.dataset.c))}
+$('#cs').oninput=cls;
+$('#p_n').onchange=()=>{const n=$('#p_n').value.trim();if(!n||S.c[n]){$('#p_n').value=S.cur;return}S.c[n]=S.c[S.cur];delete S.c[S.cur];S.cur=n;save();cls()};
+$('#dc').onclick=async()=>{if(CLOUD&&ME.role!='admin')return alert('Only the admin can delete clients.');if(!CLOUD&&Object.keys(S.c).length<2)return alert('Keep at least one client');if(!confirm('Delete '+S.cur+' and all its data?'))return;const c=S.c[S.cur];if(CLOUD&&c.id){const r=await sb.from('clients').delete().eq('id',c.id);if(r.error)return alert(r.error.message)}delete S.c[S.cur];S.cur=Object.keys(S.c)[0]||'';save();plan=[];if(S.cur){renderAll();prof()}else showView('c');cgrid()};
+let lastImp=[];
+function undoBtn(){const b=$('#imu');b.hidden=!lastImp.length;b.textContent='Undo last import ('+lastImp.length+')'}
+function impCSV(t){lastImp=[];const r=parse(t);if(!r.length)return;const h=r[0].map(v=>v.toLowerCase()),hd=h.some(v=>/keyword|topic|title|query|focus|كلمة|عنوان|موضوع/.test(v)),f=re=>h.findIndex(v=>re.test(v));
+ const ix=hd?{t:f(/topic|title|عنوان|موضوع/),k:f(/keyword|focus|كلمة/),i:f(/intent|purpose/),f:f(/format/),c:f(/cluster/),l:f(/lang/),v:f(/vol/),d:f(/diff|kd/),p:f(/pos|rank/),s:f(/status/)}:{t:0,k:1};
+ const g=(a,j)=>j>=0&&a[j]!==undefined?a[j]:'';let n=0;
+ (hd?r.slice(1):r).forEach(a=>{const t=g(a,ix.t),k=g(a,ix.k)||t;if(!k)return;if(cur().i.some(y=>y.kw.toLowerCase()==k.toLowerCase()))return;
+  let i=g(a,ix.i).toLowerCase();i=i.startsWith('comm')?'comm':i.startsWith('trans')?'trans':(i.startsWith('nav')||i.startsWith('brand'))?'nav':i.startsWith('info')?'info':detect(k);
+  const fm=FM.find(z=>z==g(a,ix.f).toLowerCase())||'how-to guide',st=ST.find(z=>z==g(a,ix.s).toLowerCase())||'idea',l=g(a,ix.l).toUpperCase()||(isAr(k)?'AR':'EN');
+  const nx=mk(t||k,k,i,fm,g(a,ix.c),l=='AR'?'AR':'EN',g(a,ix.v),g(a,ix.d),g(a,ix.p),st,'CSV import');cur().i.push(nx);lastImp.push(nx.id);n++});save();tbl();undoBtn();alert(n+' ideas imported')}
+function impGSC(t){const r=parse(t);if(r.length<2)return;const h=r[0].map(v=>v.toLowerCase()),f=re=>h.findIndex(v=>re.test(v)),q=f(/quer|keyword/),im=f(/impress/),po=f(/position/);if(q<0)return alert('No Queries column found');
+ let up=0,nw=0;r.slice(1).forEach(a=>{const k=a[q];if(!k)return;const imp=+String(a[im]||0).replace(/,/g,'')||0,pos=po>=0?Math.round(parseFloat(a[po])||0):'',x=cur().i.find(y=>y.kw.toLowerCase()==k.toLowerCase());
+  if(x){if(pos!=='')x.pos=pos;if(!x.vol)x.vol=imp;up++}else if(imp>=10){cur().i.push(mk(k,k,detect(k),'how-to guide','General',isAr(k)?'AR':'EN',imp,30,pos,'idea','GSC'));nw++}});
+ save();tbl();alert(up+' ideas updated, '+nw+' new from GSC. Impressions are used as volume and KD is a placeholder of 30.')}
+$('#bp').onclick=()=>{const t=$('#bk').value;if(t.trim()){impCSV(t);$('#bk').value=''}};
+$('#imu').onclick=()=>{const c=cur(),s=new Set(lastImp);c.i=c.i.filter(x=>!s.has(x.id));lastImp=[];save();tbl();undoBtn()};
+$('#fc').onchange=e=>{const f=e.target.files[0];if(f)readTable(f).then(impCSV).catch(fileErr);e.target.value=''};
+$('#fg').onchange=e=>{const f=e.target.files[0];if(f)readTable(f).then(impGSC).catch(fileErr);e.target.value=''};
+function pin(id){const c=cur(),p=c.pins||(c.pins=[]),i=p.indexOf(id);i<0?p.push(id):p.splice(i,1);save();show()}
+function swap(id){const i=plan.findIndex(z=>z.id==id),o=plan[i];if(!o)return;if((cur().pins||[]).includes(id))return alert('Unpin it first');
+ const cand=lastPool.filter(y=>!plan.some(z=>z.id==y.id)&&!dup(y)&&!plan.some(z=>z.id!=id&&sim(z.kw,y.kw)>=.6)).sort((a,b)=>((b.intent==o.intent)-(a.intent==o.intent))||b.s-a.s);
+ if(!cand.length)return alert('No other eligible idea to swap in');plan[i]={...cand[0],wk:o.wk,why:`Swapped in · score ${cand[0].s.toFixed(1)}`};show()}
+async function optimize(id){let sm=null;try{sm=CLOUD?{cloud:1}:window.claude?await claude.use('sample'):null}catch(e){}
+ if(!sm)return alert('AI features only work when this page is opened from claude.ai.');
+ const x=plan.find(y=>y.id==id),c=cur(),p=c.p||{},el=$('#bo-'+id);el.innerHTML='<span class="mu">Optimizing…</span>';
+ const links=c.i.filter(y=>y.cluster==x.cluster&&y.id!=id).slice(0,5).map(y=>y.topic).join(' | ')||'none';
+ try{const b=CLOUD?await aiCall('optimize',{client_id:c.id,idea:{topic:x.topic,kw:x.kw,intent:INT[x.intent],format:x.format,lang:x.lang},outline:OUT[x.format]||[],links,cta:CTA[x.stage],analysis:x.an||null}):await sm.json(`You are a senior SEO editor. Client: ${S.cur} (${p.ind||'n/a'}, ${p.site||'n/a'}). Market: ${p.m||'n/a'}. Audience: ${p.a||'n/a'}. Brief: ${p.brief||'n/a'}.
+Idea: "${x.topic}", keyword "${x.kw}", intent ${INT[x.intent]}, format ${x.format}, language ${x.lang=='AR'?'Arabic (write every field in Arabic)':'English'}.
+Current draft brief: H2s ${(OUT[x.format]||[]).join('; ')}. Internal link candidates: ${links}. CTA: ${CTA[x.stage]}. ${x.an?'Market analysis: '+JSON.stringify(x.an):''}
+Rewrite and improve it. Return ONLY JSON: {"titles":["3 title options"],"meta":"meta description under 155 chars","headings":[{"h2":"...","h3":["..."]}],"links":["anchor text -> target topic"],"faqs":["3-5 questions"],"cta":"specific CTA"}`);
+  x.ob=b;const i=c.i.find(y=>y.id==id);if(i)i.ob=b;save();planSave();el.innerHTML=boHtml(x)}
+ catch(e){el.innerHTML='<span class="wr">Failed: '+esc(e.message||e.code||'error')+'</span>'}}
+// ===== STAGE 3A: login, database sync, Clients page, profile, plan history =====
+async function aiCall(kind,body){const {data,error}=await sb.functions.invoke('ai',{body:{kind,...body}});if(error)throw new Error('AI is not switched on for this site yet. Everything else works normally.');if(data&&data.error)throw new Error(data.error);return data}
+let sb=null,ME=null,curPlanId=null,syncP=null,again=false,tm=null,pt=null;
+const setSv=(t,bad)=>{const e=$('#sv');e.textContent=t;e.className=bad?'wr':'mu'};
+function showView(v){$('#tmv').hidden=v!='t';$('#cpg').hidden=v!='c';document.querySelector('.lay').hidden=v!='w'}
+const rowOf=(n,c)=>{const p=c.p||{};return{name:n,industry:p.ind||null,website:p.site||null,brief:p.brief||null,target_market:p.m||null,target_audience:p.a||null,brand_voice:p.voice||null,products_services:p.prod||null,goals:p.goals||null,notes:p.notes||null,social:p.social||{},brand_colors:p.colors||[],logo_path:p.logo||null,quotas:c.q,pins:c.pins||[]}};
+const toRow=(x,cid)=>({id:x.id,client_id:cid,topic:x.topic,kw:x.kw,secondary_kw:x.sec||null,intent:x.intent,stage:x.stage||null,cluster:x.cluster||'General',format:x.format,lang:x.lang,vol:+x.vol||0,kd:+x.kd||0,pos:x.pos===''||x.pos==null?null:+x.pos,url:x.url||null,status:x.status,source:x.src||null,analysis:x.an||null,optimized:x.ob||null});
+const fromIdea=r=>({id:r.id,topic:r.topic,kw:r.kw,sec:r.secondary_kw||'',intent:r.intent,stage:r.stage||stage(r.intent),cluster:r.cluster,format:r.format,lang:r.lang,vol:r.vol,kd:r.kd,pos:r.pos==null?'':r.pos,url:r.url||'',status:r.status,src:r.source||'',an:r.analysis||undefined,ob:r.optimized||undefined});
+function fromRow(r){const c={id:r.id,i:[],old:[],hist:[],q:r.quotas,pins:r.pins||[],p:{ind:r.industry||'',site:r.website||'',brief:r.brief||'',m:r.target_market||'',a:r.target_audience||'',voice:r.brand_voice||'',prod:r.products_services||'',goals:r.goals||'',notes:r.notes||'',social:r.social||{},colors:r.brand_colors||[],logo:r.logo_path||''},_loaded:0};return c}
+async function allRows(t,cid){let o=[],k=0;for(;;){const r=await sb.from(t).select('*').eq('client_id',cid).range(k,k+999);if(r.error)throw r.error;o=o.concat(r.data);if(r.data.length<1000)return o;k+=1000}}
+async function loadClient(n){const c=S.c[n];if(!CLOUD||!c||c._loaded)return;
+ const [ideas,past,h]=await Promise.all([allRows('ideas',c.id),allRows('past_content',c.id),sb.from('plan_items').select('plan_id,topic,kw,plans!inner(month,params)').eq('client_id',c.id).limit(3000)]);
+ c.i=ideas.map(fromIdea);c.old=past.map(r=>({t:r.title,k:r.keyword||r.title,u:r.url||''}));
+ c.hist=(h.data||[]).map(r=>({t:r.topic,k:r.kw||r.topic,m:r.plans&&r.plans.month,p:r.plan_id,man:!!(r.plans&&r.plans.params&&r.plans.params.manual)}));
+ c._si=new Map(c.i.map(x=>[x.id,JSON.stringify(toRow(x,c.id))]));c._so=new Set(c.old.map(o=>o.t));c._loaded=1}
+async function openClient(n){try{setSv('Loading…');await loadClient(n);setSv('');S.cur=n;plan=[];curPlanId=null;renderAll();prof();showView('w');document.querySelector('.tabs button').click()}catch(e){setSv('Could not load: '+(e.message||e),1)}}
+// --- saving (automatic, a moment after each change) ---
+function queueSync(){setSv('Saving…');clearTimeout(tm);tm=setTimeout(()=>syncAll(),900)}
+async function syncAll(){if(syncP){again=true;return syncP}
+ syncP=(async()=>{try{for(const n of Object.keys(S.c))await push(n,S.c[n]);setSv('All changes saved')}catch(e){setSv('Save failed: '+(e.message||e)+' (changes are kept on screen, try again)',1)}})();
+ await syncP;syncP=null;if(again){again=false;return syncAll()}}
+async function push(n,c){const row=rowOf(n,c),js=JSON.stringify(row);
+ if(!c.id){c.id=uid();const r=await sb.from('clients').insert({id:c.id,...row});if(r.error){c.id=null;throw r.error}c._m=js}
+ else if(c._m!==js){const r=await sb.from('clients').update(row).eq('id',c.id);if(r.error)throw r.error;c._m=js}
+ if(!c._loaded)return;
+ const cur=new Map(c.i.map(x=>[x.id,JSON.stringify(toRow(x,c.id))])),sn=c._si||new Map();
+ const up=[...cur].filter(([id,j])=>sn.get(id)!==j).map(([,j])=>JSON.parse(j)),del=[...sn.keys()].filter(id=>!cur.has(id));
+ for(let k=0;k<up.length;k+=200){const r=await sb.from('ideas').upsert(up.slice(k,k+200));if(r.error)throw r.error}
+ if(del.length){const r=await sb.from('ideas').delete().in('id',del);if(r.error)throw r.error}
+ c._si=cur;
+ const so=c._so||new Set(),now=new Set(c.old.map(o=>o.t)),add=c.old.filter(o=>!so.has(o.t)).map(o=>({client_id:c.id,title:o.t,keyword:o.k||null,url:o.u||null,source:'paste/import'}));
+ for(let k=0;k<add.length;k+=200){const r=await sb.from('past_content').upsert(add.slice(k,k+200),{onConflict:'client_id,title'});if(r.error)throw r.error}
+ const gone=[...so].filter(t=>!now.has(t));
+ if(gone.length){if(!now.size){const r=await sb.from('past_content').delete().eq('client_id',c.id);if(r.error)throw r.error}else for(const t of gone){const r=await sb.from('past_content').delete().eq('client_id',c.id).eq('title',t);if(r.error)throw r.error}}
+ c._so=now}
+// --- login ---
+function showLogin(m){$('#login').hidden=false;if(m)$('#lm').textContent=m}
+async function boot(){sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+ const h=new URLSearchParams(location.hash.slice(1)+'&'+location.search.slice(1)),err=h.get('error_description');
+ const {data}=await sb.auth.getSession();
+ if(!data.session){showLogin(err?(/database|invite/i.test(err)?'This email has not been invited. Ask the admin to invite you.':err.replace(/\+/g,' ')):'');return}
+ await start(data.session)}
+$('#gl').onclick=()=>sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+async function start(se){const m=await sb.from('profiles').select('*').eq('id',se.user.id).single();
+ if(m.error||!m.data||!m.data.active){await sb.auth.signOut();return showLogin('Your account is not active. Ask the admin.')}
+ ME=m.data;$('#tmb').hidden=ME.role!='admin';$('#who').textContent=ME.email+' · '+ME.role;$('#lo').hidden=false;$('#login').hidden=true;
+ const [cl,ov]=await Promise.all([sb.from('clients').select('*').order('name'),sb.from('client_overview').select('id,idea_count,plan_count,past_count')]);
+ if(cl.error)return setSv('Could not load clients: '+cl.error.message,1);
+ const nm={};(ov.data||[]).forEach(r=>nm[r.id]={i:r.idea_count,p:r.plan_count,o:r.past_count});
+ S.c={};cl.data.forEach(r=>{let k=r.name;while(S.c[k])k+=' ('+r.id.slice(0,4)+')';const c=fromRow(r);c._m=JSON.stringify(rowOf(k,c));c._n=nm[r.id]||{i:0,p:0,o:0};S.c[k]=c});
+ showView('c');cgrid()}
+$('#lo').onclick=async()=>{await sb.auth.signOut();location.reload()};
+// --- Clients page ---
+function cgrid(){const q=($('#cq').value||'').toLowerCase(),f=$('#cf').value,N=Object.keys(S.c);
+ const ind=[...new Set(N.map(n=>(S.c[n].p||{}).ind).filter(Boolean))].sort();$('#cf').innerHTML='<option value="">All industries</option>'+ind.map(i=>`<option ${i==f?'selected':''}>${esc(i)}</option>`).join('');
+ const a=N.filter(n=>{const p=S.c[n].p||{};return(!q||(n+(p.ind||'')+(p.site||'')).toLowerCase().includes(q))&&(!f||p.ind==f)});
+ $('#cgrid').innerHTML=a.map(n=>{const c=S.c[n],p=c.p||{},k=c._n||{i:0,p:0,o:0},I=c._loaded?c.i.length:k.i,O=c._loaded?c.old.length:k.o;
+  return `<div class="card cc" data-c="${esc(n)}" style="cursor:pointer" dir="auto"><b>${esc(n)}</b><div class="mu">${esc(p.ind||'No industry yet')}</div><div class="mu">${esc(p.site||'')}</div><div style="margin-top:6px"><span class="tag">${I} ideas</span> <span class="tag">${k.p} plans</span> <span class="tag">${O} past</span></div></div>`}).join('')||'<div class="card mu">No clients to show.</div>';
+ $('#cgrid').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>openClient(b.dataset.c))}
+$('#cq').oninput=cgrid;$('#cf').onchange=cgrid;$('#vc').onclick=()=>{cgrid();showView('c')};$('#cn2').onclick=()=>$('#nc').click();
+// --- one-time import of old JSON backups ---
+function legacy(d){let n=0;Object.entries(d.c).forEach(([nm,cl])=>{let k=nm;while(S.c[k])k+=' (imported)';const m={};const ids=(cl.i||[]).map(x=>{const id=uid();m[x.id]=id;return{...x,id}});
+ S.c[k]={i:ids,q:cl.q||{info:40,comm:30,trans:20,nav:10},p:cl.p||{},old:cl.old||[],hist:[],pins:(cl.pins||[]).map(i=>m[i]).filter(Boolean),_loaded:1,_n:{i:ids.length,p:0,o:(cl.old||[]).length}};n++});save();cgrid();alert(n+' client(s) imported. They are now saving to the database.')}
+// --- profile tab ---
+const parseSo=t=>{const o={};t.split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{const m=l.match(/^([^:\/]+):\s*(\S.*)$/);if(m&&!/^https?$/i.test(m[1]))o[m[1].trim()]=m[2].trim();else o[l]=l});return o};
+const fmtSo=o=>Object.entries(o||{}).map(([k,v])=>k==v?k:k+': '+v).join('\n');
+function pfFill(p){$('#p_v').value=p.voice||'';$('#p_pr').value=p.prod||'';$('#p_g').value=p.goals||'';$('#p_nt').value=p.notes||'';socRender();$('#p_co').value=(p.colors||[]).join(', ');sws(p)}
+const sws=p=>$('#sws').innerHTML=(p.colors||[]).map(c=>`<span class="sw" style="background:${esc(c)}" title="${esc(c)}"></span>`).join(' ');
+const pm={p_v:'voice',p_pr:'prod',p_g:'goals',p_nt:'notes'};
+Object.keys(pm).forEach(id=>$('#'+id).oninput=()=>{const p=cur().p||(cur().p={});p[pm[id]]=$('#'+id).value;save()});
+$('#p_co').oninput=()=>{const p=cur().p||(cur().p={});p.colors=$('#p_co').value.split(',').map(s=>s.trim()).filter(Boolean);save();sws(p)};
+async function ensureId(){const c=cur();if(!c.id){clearTimeout(tm);await syncAll()}return c.id}
+async function pfLoad(){const loc='<span class="mu">Available in the live (database) version.</span>';
+ if(!CLOUD){$('#fl').innerHTML=loc;$('#kl').innerHTML=loc;return}
+ const id=await ensureId();if(!id)return;const [f,k]=await Promise.all([sb.from('files').select('*').eq('client_id',id).order('created_at'),sb.from('kpis').select('*').eq('client_id',id).order('created_at')]);
+ let h='';for(const x of f.data||[]){const u=await sb.storage.from('client-files').createSignedUrl(x.storage_path,3600);
+  h+=`<div class="row" style="margin:4px 0">${x.kind=='logo'?`<img src="${esc(u.data&&u.data.signedUrl)}" alt="" style="height:36px">`:''}<a href="${esc(u.data&&u.data.signedUrl)}" target="_blank" rel="noopener">${esc(x.name)}</a><span class="tag">${x.kind}</span><button data-df="${x.id}" data-sp="${esc(x.storage_path)}">Delete</button></div>`}
+ $('#fl').innerHTML=h||'<span class="mu">No files yet.</span>';
+ $('#fl').querySelectorAll('[data-df]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this file?'))return;await sb.storage.from('client-files').remove([b.dataset.sp]);await sb.from('files').delete().eq('id',b.dataset.df);pfLoad()});
+ $('#kl').innerHTML=(k.data||[]).map(r=>`<div class="row" style="margin:4px 0" data-k="${r.id}">${['name','target','current','period'].map(f=>`<input data-f="${f}" value="${esc(r[f])}" placeholder="${f}" dir="auto">`).join('')}<button data-dk="${r.id}">✕</button></div>`).join('')||'<span class="mu">No KPIs. They are optional.</span>';
+ $('#kl').querySelectorAll('[data-k] input').forEach(i=>i.onchange=async()=>{await sb.from('kpis').update({[i.dataset.f]:i.value}).eq('id',i.closest('[data-k]').dataset.k)});
+ $('#kl').querySelectorAll('[data-dk]').forEach(b=>b.onclick=async()=>{await sb.from('kpis').delete().eq('id',b.dataset.dk);pfLoad()})}
+$('#ka').onclick=async()=>{if(!CLOUD)return alert('KPIs are saved in the live (database) version.');const id=await ensureId();await sb.from('kpis').insert({client_id:id,name:'New KPI'});pfLoad()};
+async function upl(inp,kind){if(!CLOUD)return alert('File upload works in the live (database) version.');const id=await ensureId();
+ for(const f of inp.files){const path=id+'/'+uid()+'-'+f.name.replace(/[^A-Za-z0-9._-]/g,'_');const u=await sb.storage.from('client-files').upload(path,f);if(u.error){alert(u.error.message);continue}
+  await sb.from('files').insert({client_id:id,kind,name:f.name,storage_path:path,mime:f.type,size_bytes:f.size});if(kind=='logo'){(cur().p||(cur().p={})).logo=path;save()}}
+ inp.value='';pfLoad()}
+$('#lfi').onchange=e=>upl(e.target,'logo');$('#afi').onchange=e=>upl(e.target,'attachment');
+$('#aw').onclick=async()=>{const p=cur().p||{};if(!CLOUD)return alert('Auto-fill uses the secure AI server of the live version.');if(!p.site)return alert('Add the website in the client profile first.');
+ $('#awo').innerHTML='<span class="mu">Reading the website…</span>';
+ try{const data=await aiCall('autofill',{url:p.site,client_id:await ensureId()});
+  const F={industry:'Industry',brief:'Brief overview',market:'Target market',audience:'Target audience',voice:'Brand voice'};
+  $('#awo').innerHTML='<div class="card"><b>AI suggestions: review and edit, nothing is saved until you click Apply</b>'+Object.entries(F).map(([k,l])=>`<div style="margin-top:6px"><label class="mu">${l}</label><textarea data-s="${k}" rows="2" style="width:100%" dir="auto">${esc(data[k]||'')}</textarea></div>`).join('')+'<div class="row" style="margin-top:6px"><button class="p" id="aok">Apply to profile</button><button id="ano">Discard</button></div></div>';
+  $('#ano').onclick=()=>$('#awo').innerHTML='';
+  $('#aok').onclick=()=>{const v=k=>$('#awo [data-s='+k+']').value.trim();const q=cur().p||(cur().p={});if(v('industry'))q.ind=v('industry');if(v('brief'))q.brief=v('brief');if(v('market'))q.m=v('market');if(v('audience'))q.a=v('audience');if(v('voice'))q.voice=v('voice');save();prof();$('#awo').innerHTML='<span class="mu">Applied and saved.</span>'}}
+ catch(e){$('#awo').innerHTML='<span class="wr">Auto-fill failed: '+esc(e.message||'error')+'</span>'}};
+// --- saved plan history ---
+const U36=/^[0-9a-f-]{36}$/;
+const itemRow=(x,i,c)=>({week:x.wk,sort_order:i,topic:x.topic,kw:x.kw,intent:x.intent,format:x.format,cluster:x.cluster,lang:x.lang,why:x.why||null,refresh:!!x.refresh,pinned:(c.pins||[]).includes(x.id),analysis:x.an||null,optimized:x.ob||null});
+function rebuildHist(c){c.hist=(c.plans||[]).flatMap(p=>(p.items||[]).map(x=>({t:x.topic,k:x.kw||x.topic,m:p.month,p:p.id,man:!!(p.params&&p.params.manual)})))}
+function planSave(isNew){if(isNew)curPlanId=null;clearTimeout(pt);pt=setTimeout(async()=>{try{const c=cur();if(!c)return;const mo=$('#mo').value||new Date().toISOString().slice(0,7);
+  if(!CLOUD){if(!plan.length&&!curPlanId)return;c.plans=c.plans||[];
+   if(!curPlanId){curPlanId=uid();c.plans.unshift({id:curPlanId,month:mo,name:S.cur+' '+mo,created:new Date().toISOString(),params:{n:+$('#n').value,r:+$('#r').value,lg:$('#lg').value},items:[]})}
+   const p=c.plans.find(z=>z.id==curPlanId);if(p){p.items=plan.map((x,i)=>({...itemRow(x,i,c),idea_id:U36.test(x.id)?x.id:null}));rebuildHist(c);save();setSv('Plan saved to history')}return}
+  if(!plan.length){if(curPlanId)await sb.from('plan_items').delete().eq('plan_id',curPlanId);return}
+  await ensureId();await syncAll();
+  if(!curPlanId){curPlanId=uid();const r=await sb.from('plans').insert({id:curPlanId,client_id:c.id,month:mo,name:S.cur+' '+mo,params:{n:+$('#n').value,r:+$('#r').value,lg:$('#lg').value,q:c.q}});if(r.error){curPlanId=null;throw r.error}}
+  const d=await sb.from('plan_items').delete().eq('plan_id',curPlanId);if(d.error)throw d.error;
+  const r2=await sb.from('plan_items').insert(plan.map((x,i)=>({...itemRow(x,i,c),plan_id:curPlanId,client_id:c.id,idea_id:U36.test(x.id)?x.id:null})));
+  if(r2.error)throw r2.error;const pid=curPlanId;c.hist=(c.hist||[]).filter(h=>h.p!=pid).concat(plan.map(x=>({t:x.topic,k:x.kw||x.topic,m:mo,p:pid})));setSv('Plan saved to history')}catch(e){setSv('Plan save failed: '+(e.message||e),1)}},700)}
+{const g=gen;gen=function(){g();planSave(true)};const w=swap;swap=function(i){w(i);planSave()};const n=pin;pin=function(i){n(i);planSave()}}
+async function plansList(){if(CLOUD){const id=await ensureId();const r=await sb.from('plans').select('id,month,name,created_at,params,plan_items(count)').eq('client_id',id).order('created_at',{ascending:false});return(r.data||[]).map(p=>({id:p.id,month:p.month,name:p.name,created:p.created_at,count:(p.plan_items&&p.plan_items[0]&&p.plan_items[0].count)||0}))}
+ return(cur().plans||[]).map(p=>({id:p.id,month:p.month,name:p.name,created:p.created,count:(p.items||[]).length}))}
+async function planItems(pid){if(CLOUD)return(await sb.from('plan_items').select('*').eq('plan_id',pid).order('sort_order')).data||[];const p=(cur().plans||[]).find(z=>z.id==pid);return p?p.items:[]}
+async function hsLoad(){const c=cur(),P=await plansList();
+ $('#hl').innerHTML='<div class="card" style="margin:0 0 10px"><b>Add a plan</b> <span class="mu">paste an old plan, one title per line (a keyword may follow after a comma or tab). It joins your saved history, so new ideas never repeat it.</span><div class="row" style="margin:6px 0">Month <input type="month" id="hm"> <input id="hn" placeholder="Plan name (optional)"></div><textarea id="ht" rows="4" style="width:100%" dir="auto"></textarea><button class="p" id="hadd" style="margin-top:6px">Add to saved plans</button></div>'+
+ (P.map(p=>`<div class="row" style="margin:4px 0"><b>${esc(p.month)}</b><span dir="auto">${esc(p.name||'')}</span><span class="mu">${new Date(p.created).toLocaleString()}</span><span class="tag">${p.count} items</span><button data-o="${p.id}">Open</button><button data-d="${p.id}">Duplicate</button><button data-x="${p.id}">CSV</button><button data-hd="${p.id}">Delete</button></div>`).join('')||'<span class="mu">No saved plans yet. Generate one in Monthly plan, or add an old plan above.</span>');
+ $('#hm').value=new Date().toISOString().slice(0,7);const H=$('#hl');
+ $('#hadd').onclick=async()=>{const rows=parse($('#ht').value).filter(a=>a[0]);if(!rows.length)return alert('Paste at least one title');const mo=$('#hm').value||new Date().toISOString().slice(0,7),nid=uid(),name=$('#hn').value.trim()||('Added plan '+mo);
+  const items=rows.map((a,i)=>({week:Math.floor(i*4/rows.length)+1,sort_order:i,topic:a[0],kw:a[1]||a[0],intent:detect(a[1]||a[0]),format:'how-to guide',cluster:'General',lang:isAr(a[0])?'AR':'EN',why:'Added manually',refresh:false,pinned:false}));
+  if(CLOUD){const id=await ensureId(),r=await sb.from('plans').insert({id:nid,client_id:id,month:mo,name,params:{manual:true}});if(r.error)return alert(r.error.message);
+   for(let k=0;k<items.length;k+=200){const r2=await sb.from('plan_items').insert(items.slice(k,k+200).map(x=>({...x,plan_id:nid,client_id:id})));if(r2.error)return alert(r2.error.message)}
+   c.hist=(c.hist||[]).concat(items.map(x=>({t:x.topic,k:x.kw,m:mo,p:nid,man:true})))}
+  else{(c.plans=c.plans||[]).unshift({id:nid,month:mo,name,created:new Date().toISOString(),params:{manual:true},items});rebuildHist(c);save()}
+  setSv(items.length+' titles added to saved plans');hsLoad()};
+ H.querySelectorAll('[data-hd]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this saved plan? Its titles will no longer count as old content.'))return;const pid=b.dataset.hd;
+  if(CLOUD){const r=await sb.from('plans').delete().eq('id',pid);if(r.error)return alert(r.error.message);c.hist=(c.hist||[]).filter(h=>h.p!=pid)}else{c.plans=(c.plans||[]).filter(z=>z.id!=pid);rebuildHist(c);save()}
+  if(curPlanId==pid){curPlanId=null;plan=[]}setSv('Plan deleted');hsLoad()});
+ H.querySelectorAll('[data-o]').forEach(b=>b.onclick=async()=>{const it=await planItems(b.dataset.o),p=P.find(z=>z.id==b.dataset.o);
+  plan=it.map((x,i)=>{const j=c.i.find(y=>y.id==x.idea_id)||{};return{id:x.idea_id||'h'+(x.id||b.dataset.o+i),topic:x.topic,kw:x.kw,intent:x.intent,format:x.format,cluster:x.cluster,lang:x.lang,why:x.why,refresh:x.refresh,wk:x.week,an:x.analysis||undefined,ob:x.optimized||undefined,stage:stage(x.intent),vol:j.vol||0,kd:j.kd||0}});
+  curPlanId=b.dataset.o;if(p)$('#mo').value=p.month;document.querySelector('[data-t=b]').click()});
+ H.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{const it=await planItems(b.dataset.d),p=P.find(z=>z.id==b.dataset.d),nid=uid();
+  if(CLOUD){const a=await sb.from('plans').insert({id:nid,client_id:c.id,month:p.month,name:(p.name||'')+' (copy)',params:{}});if(a.error)return alert(a.error.message);
+   await sb.from('plan_items').insert(it.map(({id:_,plan_id:__,created_at:___,...x})=>({...x,plan_id:nid})))}
+  else{c.plans.unshift({id:nid,month:p.month,name:(p.name||'')+' (copy)',created:new Date().toISOString(),params:{},items:JSON.parse(JSON.stringify(it))});rebuildHist(c);save()}hsLoad()});
+ H.querySelectorAll('[data-x]').forEach(b=>b.onclick=async()=>{const it=await planItems(b.dataset.x),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  dl('plan-history.csv','\ufeff'+['week,topic,keyword,intent,format,cluster,lang,why'].concat(it.map(x=>[x.week,x.topic,x.kw,INT[x.intent]||x.intent,x.format,x.cluster,x.lang,x.why].map(q).join(','))).join('\n'),'text/csv')})}
+// ===== STAGE 3B: competitors, team page, EN/AR =====
+const caShow=(a,t)=>$('#cao').innerHTML=a?`<div class="card" dir="auto"><b>Latest AI analysis</b> <span class="mu">${t?new Date(t).toLocaleDateString():''}</span><p>${esc(a.summary)}</p><b>Content gaps</b><ul>${(a.gaps||[]).map(g=>`<li>${esc(g)}</li>`).join('')}</ul><b>Opportunities</b><ul>${(a.opportunities||[]).map(g=>`<li>${esc(g)}</li>`).join('')}</ul></div>`:'';
+const cpOpen=new Set();
+async function cpRows(){if(CLOUD){const id=await ensureId();const r=await sb.from('competitors').select('*').eq('client_id',id).order('priority',{ascending:false}).order('name');return r.data||[]}return(cur().cmp||[]).slice().sort((a,b)=>(!!b.priority-!!a.priority)||a.name.localeCompare(b.name))}
+async function cpUpd(id,k,v){if(CLOUD){const r=await sb.from('competitors').update({[k]:v}).eq('id',id);if(r.error)return alert(r.error.message)}else{const x=(cur().cmp||[]).find(y=>y.id==id);if(x){x[k]=v;save()}}setSv('Competitor saved')}
+async function cpLoad(){const rows=await cpRows();
+ $('#cpl').innerHTML=rows.map(x=>`<details class="card" data-cp="${x.id}" dir="auto" ${cpOpen.has(x.id)?'open':''}><summary><b>${esc(x.name)}</b> ${x.priority?'⭐':''} <span class="mu">${esc(x.website||'')}</span></summary><div class="row" style="margin-top:8px"><input data-f="name" value="${esc(x.name)}"><input data-f="website" value="${esc(x.website)}" placeholder="Website"><label><input type="checkbox" data-f="priority" ${x.priority?'checked':''}> ⭐ Priority</label><button data-dc="${x.id}">Delete</button></div>`+[['content_focus','Content focus'],['strengths','Strengths'],['weaknesses','Weaknesses'],['notes','Notes']].map(([f,l])=>`<textarea data-f="${f}" rows="2" placeholder="${l}" style="width:100%;margin-top:6px">${esc(x[f])}</textarea>`).join('')+`<textarea data-f="social" rows="2" placeholder="Social links, one per line" style="width:100%;margin-top:6px">${esc(fmtSo(x.social))}</textarea></details>`).join('')||'<div class="card mu">No competitors yet. Add the first one above, then add as many as you like.</div>';
+ $('#cpl').querySelectorAll('[data-f]').forEach(e=>e.onchange=async()=>{const k=e.dataset.f,v=e.type=='checkbox'?e.checked:k=='social'?parseSo(e.value):e.value;await cpUpd(e.closest('[data-cp]').dataset.cp,k,v);if(k=='priority')cpLoad()});
+ $('#cpl').querySelectorAll('details[data-cp]').forEach(d=>d.ontoggle=()=>{d.open?cpOpen.add(d.dataset.cp):cpOpen.delete(d.dataset.cp)});
+ $('#cpl').querySelectorAll('[data-dc]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this competitor?'))return;if(CLOUD)await sb.from('competitors').delete().eq('id',b.dataset.dc);else{cur().cmp=(cur().cmp||[]).filter(y=>y.id!=b.dataset.dc);save()}setSv('Competitor deleted');cpLoad()});
+ if(CLOUD){const c=await sb.from('clients').select('competitor_analysis,competitor_analysis_at').eq('id',cur().id).single();caShow(c.data&&c.data.competitor_analysis,c.data&&c.data.competitor_analysis_at)}}
+$('#cpe').onclick=()=>document.querySelectorAll('#cpl details[data-cp]').forEach(d=>d.open=true);$('#cpc').onclick=()=>document.querySelectorAll('#cpl details[data-cp]').forEach(d=>d.open=false);
+$('#cadd').onclick=async()=>{const n=$('#c_n').value.trim();if(!n)return alert('Enter the competitor name');const w=$('#c_w').value.trim(),nid=uid();cpOpen.add(nid);
+ if(CLOUD){const r=await sb.from('competitors').insert({id:nid,client_id:await ensureId(),name:n,website:w||null});if(r.error)return alert(r.error.message)}
+ else{(cur().cmp||(cur().cmp=[])).push({id:nid,name:n,website:w,content_focus:'',strengths:'',weaknesses:'',notes:'',social:{},priority:false});save()}
+ $('#c_n').value='';$('#c_w').value='';setSv('Competitor saved');cpLoad();$('#c_n').focus()};
+['c_n','c_w'].forEach(i=>$('#'+i).onkeydown=e=>{if(e.key=='Enter')$('#cadd').click()});
+$('#ca').onclick=async()=>{if(!CLOUD)return alert('This uses the secure AI server of the live version.');const id=await ensureId();$('#cao').innerHTML='<span class="mu">Analyzing competitors…</span>';
+ try{const data=await aiCall('competitors',{client_id:id});const at=new Date().toISOString();
+  const u=await sb.from('clients').update({competitor_analysis:data,competitor_analysis_at:at}).eq('id',id);if(u.error)throw u.error;caShow(data,at)}
+ catch(e){$('#cao').innerHTML='<span class="wr">Analysis failed: '+esc(e.message||'error')+'</span>'}};
+// --- Team (admin) ---
+async function tmLoad(){const [p,i,m]=await Promise.all([sb.from('profiles').select('*').order('email'),sb.from('invites').select('*').order('created_at'),sb.from('client_members').select('client_id,user_id')]);
+ const mem=new Set((m.data||[]).map(r=>r.client_id+'|'+r.user_id)),CL=Object.entries(S.c).filter(([,c])=>c.id);
+ $('#til').innerHTML=(i.data||[]).map(r=>`<div class="row" style="margin:3px 0"><span>${esc(r.email)}</span><span class="tag">${r.role}</span><span class="mu">${r.accepted_at?'joined':'waiting'}</span><button data-ri="${r.id}">Remove</button></div>`).join('')||'<span class="mu">No invites yet.</span>';
+ $('#tpl').innerHTML=(p.data||[]).map(u=>`<div style="border-bottom:1px solid var(--bd);padding:6px 0"><div class="row"><b>${esc(u.email)}</b><select data-ur="${u.id}">${opt(['editor','admin'],u.role)}</select><label><input type="checkbox" data-ua="${u.id}" ${u.active?'checked':''}> active</label>${u.id==ME.id?'':`<button data-rm="${u.id}">Remove</button>`}</div><span class="mu">Sees all clients</span></div>`).join('');
+ const T=$('#tmv');T.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{if(!confirm('Remove this person completely? They lose access and their name disappears. Clients they created stay with you.'))return;const r=await sb.rpc('admin_remove_user',{uid:b.dataset.rm});if(r.error)alert(/function|schema cache|not find|could not/i.test(r.error.message)?'First run the update SQL file in Supabase (see the instructions).':r.error.message);tmLoad()});T.querySelectorAll('[data-ri]').forEach(b=>b.onclick=async()=>{await sb.from('invites').delete().eq('id',b.dataset.ri);tmLoad()});
+ T.querySelectorAll('[data-ur]').forEach(e=>e.onchange=async()=>{if(e.dataset.ur==ME.id){alert('You cannot change your own role.');return tmLoad()}const r=await sb.from('profiles').update({role:e.value}).eq('id',e.dataset.ur);if(r.error)alert(r.error.message);tmLoad()});
+ T.querySelectorAll('[data-ua]').forEach(e=>e.onchange=async()=>{if(e.dataset.ua==ME.id){alert('You cannot deactivate yourself.');return tmLoad()}const r=await sb.from('profiles').update({active:e.checked}).eq('id',e.dataset.ua);if(r.error)alert(r.error.message)});
+ T.querySelectorAll('[data-mc]').forEach(e=>e.onchange=async()=>{const k={client_id:e.dataset.mc,user_id:e.dataset.mu},r=e.checked?await sb.from('client_members').insert(k):await sb.from('client_members').delete().eq('client_id',k.client_id).eq('user_id',k.user_id);if(r.error){alert(r.error.message);tmLoad()}})}
+$('#tmb').onclick=()=>{showView('t');tmLoad()};
+$('#ia').onclick=async()=>{const e=$('#ie').value.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e))return alert('Enter a valid email');const r=await sb.from('invites').insert({email:e,role:$('#ir').value,invited_by:ME.id});if(r.error)return alert(/duplicate|unique/i.test(r.error.message)?'That email is already invited.':r.error.message);$('#ie').value='';tmLoad()};
+$('#tcl').onclick=()=>{const u=location.origin+location.pathname;navigator.clipboard.writeText(u).then(()=>alert('Link copied. Send it with the invited Google email.')).catch(()=>prompt('Copy this link:',u))};
+// --- EN / AR ---
+const AR={'Clients':'العملاء','+ New client':'+ عميل جديد','+ New':'+ جديد','Search clients…':'ابحث عن عميل…','All industries':'كل الصناعات','Client profile':'ملف العميل','Client name':'اسم العميل','Industry':'الصناعة','Website':'الموقع الإلكتروني','Brief overview':'نبذة عن العميل','Target market (e.g. Egypt, Gulf)':'السوق المستهدف (مثل مصر، الخليج)','Target audience':'الجمهور المستهدف','Delete client':'حذف العميل','Idea bank':'بنك الأفكار','Monthly plan':'الخطة الشهرية','Dashboard':'لوحة المتابعة','Profile':'ملف العميل التفصيلي','Plan history':'سجل الخطط','Competitors':'المنافسون','Keyword research':'بحث الكلمات المفتاحية','Find keywords':'ابحث عن الكلمات','Create plan from ticked':'أنشئ خطة من المحدد','📝 Headings & meta':'📝 العناوين والميتا','Copy request':'نسخ الطلب','Save headings & meta':'حفظ العناوين والميتا','Open claude.ai ↗':'افتح claude.ai ↗','Suggest topics':'اقترح مواضيع','Analyze SERP for ticked topics':'حلل نتائج البحث للمواضيع المحددة','Create ideas from my choices':'أنشئ أفكاراً من اختياراتي','Create plan':'أنشئ الخطة','Winning headings':'العناوين الرابحة','Questions people ask':'أسئلة يطرحها الناس','Refresh':'تحديث','+ Add topic':'+ أضف موضوعاً','Auto plan':'خطة تلقائية','Create plan automatically':'أنشئ الخطة تلقائياً','Open in Monthly plan':'افتح في الخطة الشهرية','Old content analysis':'تحليل المحتوى القديم','Who ranks most':'من يتصدر النتائج','Remove unreadable rows':'حذف الصفوف غير المقروءة','Market research':'أبحاث السوق','Analyze market':'تحليل السوق','Live searches':'عمليات البحث المباشرة','Add ticked to Idea bank':'أضف المحدد إلى بنك الأفكار','Snapshot':'ملخص','Search intent mix':'توزيع نية البحث','What people care about':'ما يهتم به الناس','Signals':'مؤشرات','Gap':'فجوة','Gaps only':'الفجوات فقط','Questions':'الأسئلة','Buying':'شراء','All':'الكل','Normal depth':'بحث عادي','Deep (more searches)':'بحث أعمق','Copy as list':'نسخ كقائمة','Team':'الفريق','Add idea':'إضافة فكرة','Topic / title':'الموضوع / العنوان','Primary keyword':'الكلمة المفتاحية الرئيسية','Cluster':'المجموعة','Vol':'الحجم','KD':'الصعوبة','Pos':'الترتيب','Bulk paste':'لصق جماعي','Import':'استيراد','Search…':'بحث…','All intents':'كل الأهداف','All statuses':'كل الحالات','Topic':'الموضوع','Keyword':'الكلمة المفتاحية','Intent':'الهدف','Format':'الشكل','Lang':'اللغة','Language':'اللغة','Status':'الحالة','Informational':'معلوماتي','Commercial':'تجاري','Transactional':'شرائي','Brand':'العلامة التجارية','Generate plan':'إنشاء الخطة','Export CSV':'تصدير CSV','Copy for Google Sheets':'نسخ إلى Google Sheets','Print':'طباعة','Analyze all with AI':'تحليل الكل بالذكاء الاصطناعي','Past content plans (Google Sheets)':'خطط المحتوى السابقة (Google Sheets)','Add to old plan':'إضافة إلى الخطة السابقة','Clear old plan':'مسح الخطة السابقة','Export JSON':'تصدير JSON','Import JSON':'استيراد JSON','Sign out':'تسجيل الخروج','Sign in with Google':'تسجيل الدخول عبر Google','Saved plans':'الخطط المحفوظة','Open':'فتح','Duplicate':'نسخ','Delete':'حذف','Remove':'إزالة','Add keywords':'إضافة كلمات','Posts':'عدد المقالات','Month':'الشهر','Refresh slots':'خانات التحديث','Intent quota %:':'نسب الأهداف %:','Analyze market (AI)':'تحليل السوق (ذكاء اصطناعي)','Optimize brief (AI)':'تحسين الملخص (ذكاء اصطناعي)','Unpin':'إلغاء التثبيت','📌 Pin':'📌 تثبيت','↔ Swap':'↔ استبدال','Brand voice and tone':'نبرة وصوت العلامة','Products / services':'المنتجات / الخدمات','Goals':'الأهداف','Notes':'ملاحظات','More profile details':'تفاصيل إضافية','Auto-fill from website (AI)':'تعبئة تلقائية من الموقع (ذكاء اصطناعي)','Logo and attachments':'الشعار والمرفقات','KPIs':'مؤشرات الأداء','optional':'اختياري','+ Add KPI':'+ إضافة مؤشر','Old plan overlap':'تداخل مع الخطة السابقة','Competitor name':'اسم المنافس','+ Add competitor':'+ إضافة منافس','Analyze competitors with AI':'تحليل المنافسين بالذكاء الاصطناعي','⭐ Priority':'⭐ أولوية','Content focus':'محور المحتوى','Strengths':'نقاط القوة','Weaknesses':'نقاط الضعف','Invite':'دعوة','Invites':'الدعوات','People':'الأعضاء','Copy invite link':'نسخ رابط الدعوة','Assigned clients':'العملاء المعيّنون','active':'نشط','Editor':'محرر','Admin':'مدير'};
+let LANG='en';try{LANG=localStorage.getItem('cp_lang')||'en'}catch(e){}
+const tn=new Map(),ta=new Map();let raf=0;
+function trs(s){const t=s.trim();if(!t)return null;let m=AR[t];if(!m){let r=t.match(/^(\d+) (ideas|plans|past)$/);if(r)m=r[1]+' '+{ideas:'أفكار',plans:'خطط',past:'سابقة'}[r[2]];else if(r=t.match(/^Week (\d)$/))m='الأسبوع '+r[1]}return m?s.replace(t,m):null}
+function applyLang(){const ar=LANG=='ar';document.documentElement.dir=ar?'rtl':'ltr';document.documentElement.lang=ar?'ar':'en';
+ if(!ar){tn.forEach((o,n)=>n.nodeValue=o);ta.forEach((o,e)=>Object.entries(o).forEach(([a,v])=>e.setAttribute(a,v)));tn.clear();ta.clear();return}
+ document.querySelectorAll('option:not([value])').forEach(o=>o.setAttribute('value',o.textContent));
+ const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;
+ while(n=w.nextNode()){const e=n.parentElement;if(!e||/^(SCRIPT|STYLE|TEXTAREA)$/.test(e.tagName)||e.closest('#lgb')||tn.has(n))continue;const r=trs(n.nodeValue);if(r){tn.set(n,n.nodeValue);n.nodeValue=r}}
+ document.querySelectorAll('[placeholder],[title]').forEach(e=>['placeholder','title'].forEach(a=>{const v=e.getAttribute(a);if(!v)return;const r=trs(v);if(r&&!(ta.get(e)||{})[a]){(ta.get(e)||ta.set(e,{}).get(e))[a]=v;e.setAttribute(a,r)}}));
+ if(tn.size>3000)for(const k of [...tn.keys()])if(!k.isConnected)tn.delete(k)}
+new MutationObserver(()=>{if(LANG=='ar'){cancelAnimationFrame(raf);raf=requestAnimationFrame(applyLang)}}).observe(document.body,{childList:true,subtree:true});
+$('#lgb').onclick=()=>{LANG=LANG=='ar'?'en':'ar';try{localStorage.setItem('cp_lang',LANG)}catch(e){}$('#lgb').textContent=LANG=='ar'?'English':'عربي';applyLang()};
+$('#lgb').textContent=LANG=='ar'?'English':'عربي';
+// ---- free idea engine (no AI): builds NEW ideas from the client's profile and old content, skipping duplicates ----
+const STOP=new Set('the a an of for in to and or is are with on your you my how what best top price cost guide vs near me why when في من على إلى عن مع هل ما هو هي كيف أفضل افضل سعر اسعار أسعار تكلفة طريقة دليل الفرق بين لماذا متى'.split(' '));
+const core=(t,m)=>{const M=new Set((m||'').toLowerCase().split(/\s+/));return t.toLowerCase().replace(/[?؟:,.،()"'“”]/g,' ').split(/\s+/).filter(x=>x&&!STOP.has(x)&&!M.has(x)).slice(0,4).join(' ')};
+function seeds(c,m,lg){const cnt={},add=(s,w)=>{s=s.trim();if(s.length>2)cnt[s]=(cnt[s]||0)+w};
+ ((c.p||{}).prod||'').split(/[\n,;،]/).forEach(x=>add(x.toLowerCase(),5));
+ [...(c.old||[]).map(o=>o.k||o.t),...(c.hist||[]).map(h=>h.k),...c.i.map(i=>i.kw)].forEach(t=>{const k=core(t,m);if(k)add(k,1)});
+ const seen=new Set();return Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(e=>e[0]).filter(x=>{const k=x.replace(/s\b/g,'');if(seen.has(k))return false;seen.add(k);return true}).filter(x=>!lg||lg=='AUTO'||lg=='BOTH'||(lg=='AR')==isAr(x)).slice(0,14)}
+const TPL={EN:{info:[['how to choose {x}','how-to guide'],['what is {x}','glossary'],['{x}: a complete guide','how-to guide'],['common mistakes to avoid with {x}','listicle'],['{x} checklist','checklist'],['when do you need {x}?','FAQ'],['{x}: frequently asked questions','FAQ']],comm:[['best {x} in {m}','roundup'],['{x} compared: how to choose between your options','comparison'],['questions to ask before choosing {x}','checklist'],['{x} reviews: what to look for','roundup']],trans:[['{x} price in {m}','listicle'],['how much does {x} cost?','how-to guide'],['book {x} in {m}','how-to guide']],nav:[['why choose {c} for {x}','opinion'],['{x} at {c}: how we work','case study']]},
+AR:{info:[['كيف تختار {x}','how-to guide'],['ما هو {x}؟','glossary'],['دليل {x} الشامل','how-to guide'],['أخطاء شائعة عند {x}','listicle'],['قائمة مراجعة {x}','checklist'],['متى تحتاج إلى {x}؟','FAQ'],['أسئلة شائعة عن {x}','FAQ']],comm:[['أفضل {x} في {m}','roundup'],['مقارنة بين خيارات {x}','comparison'],['أسئلة يجب أن تسألها قبل اختيار {x}','checklist'],['تقييم {x}: ما الذي يجب البحث عنه','roundup']],trans:[['سعر {x} في {m}','listicle'],['كم تكلفة {x}؟','how-to guide'],['احجز {x} في {m}','how-to guide']],nav:[['لماذا تختار {c} من أجل {x}','opinion'],['{x} في {c}: كيف نعمل','case study']]}};
+let genL=[];
+function ngInfo(){const c=cur(),e=$('#ngu');if(!c||!e)return;const O=c.old||[],H=c.hist||[],all=O.map(o=>o.k||o.t).concat(H.map(h=>h.k)),a=all.filter(x=>isAr(x||'')).length;
+ e.textContent=`Saved for this client: ${O.length} past content titles, ${H.length} earlier plan items, ${c.i.length} ideas${all.length?` · past content: ${a} Arabic, ${all.length-a} English`:''}${(c.p||{}).prod?' · products listed':''}. You never need to add them again.`}
+function makeIdeas(){ngInfo();const c=cur(),p=c.p||{},n=Math.min(60,+$('#ng').value||20),lg=$('#ngl').value,m=(p.m||'').split(/[,،]/)[0].trim(),o=$('#ngo');
+ const S=seeds(c,m,lg);
+ if(!S.length){const all=seeds(c,m,'BOTH'),nA=all.filter(isAr).length,nE=all.length-nA;o.innerHTML=all.length?`<div class="wr">No ${lg=='AR'?'Arabic':'English'} topics found. Your saved content for this client has ${nA} Arabic and ${nE} English topics. Set Language to ${nA?'Arabic':'English'}, Both or Auto.</div>`:'<div class="wr">Nothing saved for this client yet. Add old content plans (Past content plans), earlier plans (Plan history) or the client’s products in Profile, then try again.</div>';return}
+ const cand=[];S.forEach((x,si)=>{const L=isAr(x)?'AR':'EN';Object.keys(INT).forEach(k=>TPL[L][k].forEach(([pat,fm],ti)=>{let t=pat.replace('{x}',x).replace('{c}',S_NAME());t=m?t.replace('{m}',m):t.replace(/ (in|في) \{m\}/,'');if(L=='EN')t=t[0].toUpperCase()+t.slice(1);
+  cand.push({topic:t,kw:t.toLowerCase().replace(/[?؟:]/g,'').trim(),intent:k,format:fm,cluster:x[0].toUpperCase()+x.slice(1),lang:L,ti,si})}))});
+ cand.sort((a,b)=>a.ti-b.ti||a.si-b.si);
+ const have=[...c.i.map(i=>i.kw),...(c.old||[]).map(x=>x.k),...(c.old||[]).map(x=>x.t)],out=[];
+ const ok=x=>!dup(x)&&!have.some(h=>h.toLowerCase()==x.kw||sim(x.kw,h)>=.6)&&!out.some(y=>y.kw==x.kw||sim(x.kw,y.kw)>=.85);
+ const q=c.q||{};for(const k in INT){const t=Math.round(n*(q[k]||0)/100);let g=0;for(const x of cand){if(g>=t||out.length>=n)break;if(x.intent==k&&ok(x)){out.push(x);g++}}}
+ for(const x of cand){if(out.length>=n)break;if(!out.includes(x)&&ok(x))out.push(x)}
+ genL=out;
+ o.innerHTML=out.length?`<div class="mu" style="margin:6px 0">${out.length} new ideas. None overlap your old content or existing ideas. Untick any you don’t want.</div><div class="sc"><table>`+out.map((x,i)=>`<tr><td><input type="checkbox" data-g="${i}" checked></td><td dir="auto">${esc(x.topic)}</td><td>${INT[x.intent]}</td><td>${esc(x.format)}</td><td dir="auto">${esc(x.cluster)}</td></tr>`).join('')+'</table></div><button class="p" id="nga" style="margin-top:6px">Add selected to Idea bank</button>':'<div class="wr">Everything this tool could suggest already overlaps your old content or ideas. Add more products/services in Profile or try the other language.</div>';
+ const b=$('#nga');if(b)b.onclick=()=>{let k=0;o.querySelectorAll('[data-g]:checked').forEach(e=>{const x=genL[+e.dataset.g];cur().i.unshift(mk(x.topic,x.kw,x.intent,x.format,x.cluster,x.lang,0,0,'','idea','generated'));k++});save();tbl();o.innerHTML='<div class="mu">'+k+' ideas added to the Idea bank.</div>'}}
+const S_NAME=()=>S.cur;
+$('#ngb').onclick=makeIdeas;
+$('#gp').onclick=async()=>{const c=cur(),p=c.p||{},n=+$('#gn').value||20,lg=$('#gnl').value;
+ let comp='';if(CLOUD&&c.id){const r=await sb.from('competitors').select('name,website,content_focus,strengths,weaknesses,priority').eq('client_id',c.id).limit(10);comp=(r.data||[]).map(x=>`- ${x.name} (${x.website||'n/a'}) focus: ${x.content_focus||'n/a'}; strengths: ${x.strengths||'n/a'}; weaknesses: ${x.weaknesses||'n/a'}${x.priority?' [priority]':''}`).join('\n')}
+ const have=c.i.slice(0,150).map(x=>x.kw).join(' | ')||'none',past=[...(c.old||[]),...(c.hist||[])].slice(0,150).map(x=>x.t).join(' | ')||'none',q=c.q||{},L=lg=='AR'?'Arabic':lg=='EN'?'English':'a mix of English and Arabic (tag each row EN or AR)';
+ const t=`You are a senior SEO content strategist. Suggest ${n} NEW blog post ideas for this client.
+CLIENT: ${S.cur}. Website: ${p.site||'n/a'}. Industry: ${p.ind||'n/a'}. Brief: ${p.brief||'n/a'}. Target market: ${p.m||'n/a'}. Target audience: ${p.a||'n/a'}. Brand voice: ${p.voice||'n/a'}. Products/services: ${p.prod||'n/a'}. Goals: ${p.goals||'n/a'}.
+COMPETITORS:
+${comp||'none provided'}
+ALREADY IN MY IDEA BANK (do not repeat): ${have}
+ALREADY PUBLISHED / PAST PLANS (do not repeat or closely overlap): ${past}
+RULES:
+- First search the web for this client's market: current trends, what competitors write about, and the questions people ask. Use what you find.
+- Language: ${L}.
+- Cover all search intents roughly like this: informational ${q.info}%, commercial ${q.comm}%, transactional ${q.trans}%, brand ${q.nav}%.
+- Vary the formats and angles, and group ideas into topic clusters.
+- Base the ideas on the client's real products, audience and market. Do not invent statistics or search volumes.
+OUTPUT: only CSV rows, no explanation and no markdown fences. The first line must be exactly:
+topic,keyword,intent,format,cluster,language,volume,kd,position,status
+Then one row per idea. Put text in double quotes if it contains commas. intent must be one of: informational, commercial, transactional, brand. format must be one of: ${FM.join(', ')}. language must be EN or AR. Leave volume, kd and position empty. status is always: idea.`;
+ $('#gpo').value=t;$('#gpo').hidden=false;
+ try{await navigator.clipboard.writeText(t);alert('Request copied. Paste it into claude.ai.')}catch(e){$('#gpo').select();alert('Select the text in the box, copy it, and paste it into claude.ai.')}};
+// ---- social accounts (any platform, any link) ----
+const SOC=['Facebook','Instagram','YouTube','LinkedIn','TikTok','X (Twitter)','Pinterest','Snapchat','Threads','WhatsApp','Telegram','Website','Other'];
+const soList=o=>Array.isArray(o)?o:Object.entries(o||{}).map(([k,v])=>({platform:k==v?'Other':k,url:v}));
+function socRender(){const p=cur().p||(cur().p={}),L=p.social=soList(p.social);
+ $('#p_soc').innerHTML=L.map((x,i)=>`<div class="row" style="margin:4px 0"><select data-sp="${i}">${opt(SOC,SOC.includes(x.platform)?x.platform:'Other')}</select><input data-su="${i}" value="${esc(x.url)}" placeholder="https://…" style="flex:1" dir="ltr">${/^https?:\/\//.test(x.url)?`<a href="${esc(x.url)}" target="_blank" rel="noopener">Open</a>`:''}<button data-sx="${i}" title="Remove">✕</button></div>`).join('')||'<span class="mu">No social accounts yet.</span>';
+ $('#p_soc').querySelectorAll('[data-sp]').forEach(e=>e.onchange=()=>{L[+e.dataset.sp].platform=e.value;save()});
+ $('#p_soc').querySelectorAll('[data-su]').forEach(e=>e.onchange=()=>{L[+e.dataset.su].url=e.value.trim();save();socRender()});
+ $('#p_soc').querySelectorAll('[data-sx]').forEach(b=>b.onclick=()=>{L.splice(+b.dataset.sx,1);save();socRender()})}
+$('#p_soa').onclick=()=>{const p=cur().p||(cur().p={});p.social=soList(p.social);p.social.push({platform:'Facebook',url:''});save();socRender()};
+function removeFromPlan(id){const i=plan.findIndex(z=>z.id==id);if(i<0)return;plan.splice(i,1);if(!plan.length)lastWhy=null;planSave();show()}
+// ---- Arabic briefs: Arabic ideas get Arabic headings, links, CTA and reasons ----
+const xAr=x=>x.lang=='AR'||isAr(x.topic||'');
+const INTA={info:'معلوماتي',comm:'تجاري',trans:'شرائي',nav:'العلامة التجارية'};
+const FMA={'how-to guide':'دليل إرشادي',listicle:'قائمة',comparison:'مقارنة','case study':'دراسة حالة',glossary:'مصطلحات',opinion:'مقال رأي',FAQ:'أسئلة شائعة',checklist:'قائمة مراجعة',template:'قالب',roundup:'تجميعة'};
+const OUTA={'how-to guide':['ما الذي تحتاجه','الخطوات بالتفصيل','أخطاء شائعة','الأدوات والتكاليف'],listicle:['مقدمة ومعايير الاختيار','العناصر مع المميزات والعيوب','كيف تختار الأنسب','الخلاصة'],comparison:['نظرة سريعة على الخيارات','جدول المقارنة','لمن يناسب كل خيار','الخلاصة والتوصية'],'case study':['العميل والتحدي','الحل والمنهج','النتائج بالأرقام','الدروس المستفادة'],glossary:['التعريف','لماذا يهم؟','أمثلة','مصطلحات ذات صلة'],opinion:['الفكرة الرئيسية','الأدلة','الردود على الاعتراضات','الخلاصة'],FAQ:['أهم الأسئلة','إجابات مختصرة ومباشرة','مصادر ذات صلة'],checklist:['لمن هذه القائمة','القائمة','أخطاء يجب تجنبها','الخطوات التالية'],template:['ما الذي يتضمنه القالب','كيفية الاستخدام','مثال مكتمل'],roundup:['نطاق التغطية','أبرز العناصر المختارة','أهم الاتجاهات']};
+const CTAA={awareness:'اشترك أو اقرأ الدليل المرتبط',consideration:'حمّل المورد أو اطلع على دراسات الحالة',decision:'احجز استشارة أو اطلب عرض سعر'};
+const whyAr=w=>String(w||'').replace('Score','الدرجة').replace(/Informational|Commercial|Transactional|Brand/,m=>({Informational:'معلوماتي',Commercial:'تجاري',Transactional:'شرائي',Brand:'العلامة التجارية'}[m])).replace('quota','حصة').replace('filled after quotas (best remaining)','أُضيفت بعد استيفاء الحصص (الأفضل المتبقي)').replace('Pinned by you','📌 مثبّتة من طرفك').replace('Swapped in','تم استبدالها').replace('Refresh slot: declining or outdated post','خانة تحديث: مقال متراجع أو قديم');
+// ===== Live market research (free): Google autocomplete via JSONP =====
+function jsonp(u){return new Promise((ok,no)=>{const cb='cpj'+Math.random().toString(36).slice(2),s=document.createElement('script');let t;
+ const end=()=>{clearTimeout(t);try{delete window[cb]}catch(e){window[cb]=undefined}s.remove()};
+ t=setTimeout(()=>{end();no(new Error('timeout'))},8000);window[cb]=d=>{end();ok(d)};s.onerror=()=>{end();no(new Error('blocked'))};
+ s.src=u+'&callback='+cb;document.head.appendChild(s)})}
+async function gSuggest(q,hl,gl,yt){const d=await jsonp('https://suggestqueries.google.com/complete/search?client=chrome&hl='+hl+'&gl='+gl+(yt?'&ds=yt':'')+'&q='+encodeURIComponent(q));
+ const L=Array.isArray(d)&&Array.isArray(d[1])?d[1]:[],R=(d&&d[4]&&d[4]['google:suggestrelevance'])||[];return L.map((s,i)=>({s:String(s).trim(),r:+R[i]||0})).filter(x=>x.s&&!/^https?:/.test(x.s))}
+const MKP={ar:{q:['كيف','ما هو','هل','لماذا','متى','افضل','سعر','تكلفة','مقارنة','اضرار','فوائد','عروض'],buy:/سعر|اسعار|أسعار|تكلفة|عروض|خصم|حجز|شراء|رخيص|كام/,cmp:/افضل|أفضل|مقارنة|الفرق|ام |تجربتي|تقييم|رأي/,qq:/^(كيف|ما|ماذا|هل|لماذا|متى|اين|أين|كم)|؟/},
+ en:{q:['how','what','why','can','is','best','price','cost','vs','near me','review','side effects'],buy:/price|cost|cheap|deal|offer|buy|book|near me|discount/,cmp:/best|vs|versus|review|compare|alternative|top /,qq:/^(how|what|why|when|where|can|is|are|does|do|which|should)\b|\?/}};
+function mkFmt(s,P){return P.qq.test(s)?(/^(how|كيف)/.test(s)?'how-to guide':'FAQ'):/ vs |versus|مقارنة|الفرق/.test(s)?'comparison':P.cmp.test(s)?'listicle':P.buy.test(s)?'listicle':'how-to guide'}
+let mkRows=[],mkMeta=null;
+async function mkRun(){const seed=$('#mks').value.trim();if(!seed)return alert('Type a topic first');const [hl,gl]=$('#mkm').value.split('|'),P=MKP[hl],deep=$('#mkd').value=='2',o=$('#mko');
+ const Q=[seed,...P.q.map(p=>p=='near me'||p=='vs'||p=='review'||p=='price'||p=='cost'||p=='side effects'?seed+' '+p:p+' '+seed)];
+ if(deep)(hl=='ar'?'ابتثجحخدرزسشصطعفقكلمنهوي'.split(''):'abcdefghijklmnoprstw'.split('')).forEach(ch=>Q.push(seed+' '+ch));
+ const M=new Map();let done=0,fail=0;o.innerHTML='<div class="card mu" id="mkp">Searching Google suggestions… 0/'+Q.length+'</div>';
+ const add=(x,q,src)=>{const k=x.s.toLowerCase().replace(/\s+/g,' ');if(k==seed.toLowerCase())return;const e=M.get(k)||{s:x.s,hits:0,rel:0,from:new Set(),yt:0};e.hits++;e.rel=Math.max(e.rel,x.r);e.from.add(q);if(src=='yt')e.yt=1;M.set(k,e)};
+ for(let i=0;i<Q.length;i+=4){await Promise.all(Q.slice(i,i+4).map(async q=>{try{(await gSuggest(q,hl,gl)).forEach(x=>add(x,q))}catch(e){fail++}done++;const p=$('#mkp');if(p)p.textContent='Searching Google suggestions… '+done+'/'+Q.length}))}
+ try{(await gSuggest(seed,hl,gl,1)).forEach(x=>add(x,seed,'yt'))}catch(e){}
+ if(!M.size){o.innerHTML=`<div class="card wr">${fail==Q.length?'Google could not be reached from this page. If you are in the claude.ai preview, this only works on your own website (the preview blocks outside connections). Otherwise check your internet connection.':'Google returned no suggestions for this topic. Try a shorter or more common phrase.'}</div>`;return}
+ const c=cur();mkRows=[...M.values()].map(e=>{const s=e.s,intent=P.buy.test(s)?'trans':P.cmp.test(s)?'comm':detect(s),cov=dup({kw:s,topic:s})||c.i.find(y=>sim(s,y.kw||'')>=.6);
+  return{s,intent,q:P.qq.test(s),buy:P.buy.test(s),hits:e.hits,rel:e.rel,yt:e.yt,cov:cov?(cov.t||cov.topic||cov.kw):'',fmt:mkFmt(s,P),lang:hl=='ar'?'AR':'EN',score:e.hits*3+Math.round(e.rel/300)+(e.yt?1:0)}}).sort((a,b)=>b.score-a.score);
+ mkMeta={seed,hl,gl,at:new Date(),n:Q.length,fail};(c.mkh=c.mkh||[]).unshift({seed,m:$('#mkm').value,at:mkMeta.at.toISOString(),n:mkRows.length,gaps:mkRows.filter(r=>!r.cov).length});c.mkh=c.mkh.slice(0,10);mkShow()}
+function mkShow(){const R=mkRows,m=mkMeta,o=$('#mko');if(!m)return;const gaps=R.filter(r=>!r.cov),qs=R.filter(r=>r.q),buy=R.filter(r=>r.buy),cnt=k=>R.filter(r=>r.intent==k).length;
+ const words=new Map(),stop=new Set([...m.seed.toLowerCase().split(/\s+/),...MKP[m.hl].q.join(' ').split(' '),'في','من','على','عن','the','for','in','of','and','to','a']);
+ R.forEach(r=>r.s.toLowerCase().split(/\s+/).forEach(w=>{if(w.length>2&&!stop.has(w))words.set(w,(words.get(w)||0)+1)}));const top=[...words].sort((a,b)=>b[1]-a[1]).slice(0,12);
+ const row=(r,i)=>`<tr><td><input type="checkbox" data-mk="${i}" ${r.cov?'':'checked'}></td><td dir="auto">${esc(r.s)}${r.yt?' <span class="tag" title="Also searched on YouTube">▶</span>':''}</td><td>${INT[r.intent]}</td><td>${esc(r.fmt)}</td><td><span title="How often Google suggested it">${'●'.repeat(Math.min(5,r.hits))}</span></td><td dir="auto" class="${r.cov?'mu':'wr'}">${r.cov?'Covered: '+esc(r.cov):'Gap'}</td></tr>`;
+ o.innerHTML=`<div class="g"><div class="card"><b>Snapshot</b><div class="mu">“${esc(m.seed)}” · ${m.hl.toUpperCase()}-${m.gl.toUpperCase()} · ${m.at.toLocaleString()}</div><p>${R.length} live searches found${m.fail?` (${m.fail} lookups failed)`:''}<br><b>${gaps.length}</b> are not covered by your content yet</p></div>
+ <div class="card"><b>Search intent mix</b>${Object.keys(INT).map(k=>`<div class="bar"><span>${INT[k]}</span><i style="width:${cnt(k)/Math.max(1,R.length)*140}px"></i><span>${cnt(k)}</span></div>`).join('')}</div>
+ <div class="card"><b>What people care about</b><div style="margin-top:6px">${top.map(([w,n])=>`<span class="tag" dir="auto" style="display:inline-block;margin:2px">${esc(w)} · ${n}</span>`).join('')||'<span class="mu">Not enough data</span>'}</div></div>
+ <div class="card"><b>Signals</b><p>${qs.length} questions people ask<br>${buy.length} buying / price searches<br>${R.filter(r=>r.yt).length} also searched on YouTube</p><a href="https://trends.google.com/trends/explore?geo=${m.gl.toUpperCase()}&q=${encodeURIComponent(m.seed)}" target="_blank" rel="noopener">Open in Google Trends ↗</a> · <a href="https://www.google.com/search?q=${encodeURIComponent(m.seed)}&gl=${m.gl}&hl=${m.hl}" target="_blank" rel="noopener">See who ranks ↗</a></div></div>
+ <div class="card"><div class="row"><b>Live searches</b><span class="mu">gaps are ticked; covered ones are what your old content already handles</span><span style="flex:1"></span><select id="mkf"><option value="all">All</option><option value="gap">Gaps only</option><option value="q">Questions</option><option value="buy">Buying</option></select></div>
+ <div class="sc" style="margin-top:6px"><table id="mkt"><tr><th></th><th>Search</th><th>Intent</th><th>Suggested format</th><th>Popularity</th><th>Your content</th></tr>${R.map(row).join('')}</table></div>
+ <div class="row" style="margin-top:8px"><button class="p" id="mka">Add ticked to Idea bank</button><button id="mkc">Copy as list</button></div>
+ <p class="mu">Popularity is how often Google suggested the phrase across the searches, not monthly volume. Check volume in Search Console or a keyword tool.</p></div>`;
+ $('#mkf').onchange=e=>{const v=e.target.value;$('#mkt').querySelectorAll('tr').forEach((tr,i)=>{if(!i)return;const r=R[i-1];tr.hidden=!(v=='all'||v=='gap'&&!r.cov||v=='q'&&r.q||v=='buy'&&r.buy)})};
+ $('#mka').onclick=()=>{const c=cur();let n=0,sk=0;document.querySelectorAll('#mkt [data-mk]:checked').forEach(e=>{if(e.closest('tr').hidden)return;const r=R[+e.dataset.mk];if(c.i.some(y=>(y.kw||'').toLowerCase()==r.s.toLowerCase())){sk++;return}
+  c.i.push(mk(r.s,r.s,r.intent,r.fmt,m.seed,r.lang,0,0,'','idea','Market research'));n++});save();tbl();alert(n+' ideas added to the Idea bank'+(sk?` (${sk} already there)`:''))};
+ $('#mkc').onclick=()=>{const t=R.filter(r=>!r.cov).map(r=>r.s).join('\n');navigator.clipboard.writeText(t).then(()=>alert('Gaps copied')).catch(()=>prompt('Copy:',t))}}
+function mkLoad(){const c=cur(),p=c.p||{},S0=[...new Set([...(p.prod||'').split(/[\n,،;]+/).map(x=>x.trim()),...c.i.map(x=>x.cluster)].filter(x=>x&&x!='General'))].slice(0,30);
+ $('#mksl').innerHTML=S0.map(x=>`<option value="${esc(x)}">`).join('');if(!$('#mks').value&&S0[0])$('#mks').value=S0[0];
+ const mkt=(p.m||'').toLowerCase(),gl=/saudi|ksa|السعودية/.test(mkt)?'sa':/uae|emirates|dubai|الامارات|الإمارات/.test(mkt)?'ae':/usa|united states|america/.test(mkt)?'us':/uk|britain|england/.test(mkt)?'gb':'eg';
+ const hl=isAr($('#mks').value)?'ar':'en',v=hl+'|'+gl;if([...$('#mkm').options].some(o=>o.value==v))$('#mkm').value=v;
+ $('#mkl').innerHTML=(c.mkh||[]).length?'Recent: '+c.mkh.map((h,i)=>`<a href="#" data-mh="${i}" dir="auto">${esc(h.seed)} (${h.gaps} gaps)</a>`).join(' · '):'';
+ $('#mkl').querySelectorAll('[data-mh]').forEach(a=>a.onclick=e=>{e.preventDefault();const h=c.mkh[+a.dataset.mh];$('#mks').value=h.seed;$('#mkm').value=h.m;mkRun()});
+ if(mkMeta&&mkMeta.client==S.cur)mkShow();else $('#mko').innerHTML=''}
+$('#mkb').onclick=async()=>{const b=$('#mkb');b.disabled=true;try{await mkRun();if(mkMeta)mkMeta.client=S.cur}finally{b.disabled=false}};
+$('#mks').onkeydown=e=>{if(e.key=='Enter')$('#mkb').click()};$('#mks').oninput=()=>{const hl=isAr($('#mks').value)?'ar':'en',g=$('#mkm').value.split('|')[1],v=hl+'|'+g;if([...$('#mkm').options].some(o=>o.value==v))$('#mkm').value=v};
+// ---- cleanup: select & delete ideas, remove unreadable rows from bad imports ----
+const BAD=s=>/\uFFFD|PK\u0003|\[Content_Types\]|xl\/(worksheets|drawings|styles|theme|_rels)|docProps\/|[\u0000-\u0008\u000E-\u001F]/.test(String(s||''));
+let selIds=new Set();
+function selUpd(){const b=$('#dsel');if(b){b.hidden=!selIds.size;b.textContent='Delete selected ('+selIds.size+')'}}
+function cleanBad(){const c=cur(),bi=c.i.filter(x=>BAD(x.topic)||BAD(x.kw)).length,bo=(c.old||[]).filter(o=>BAD(o.t)||BAD(o.k)).length;
+ if(!bi&&!bo)return alert('No unreadable rows found for this client.');
+ if(!confirm(`Remove ${bi} unreadable ideas and ${bo} unreadable past content rows? These came from a file that was read wrongly before the fix.`))return;
+ c.i=c.i.filter(x=>!(BAD(x.topic)||BAD(x.kw)));c.old=(c.old||[]).filter(o=>!(BAD(o.t)||BAD(o.k)));selIds.clear();save();oldv();tbl();selUpd();
+ alert(`Removed ${bi} ideas and ${bo} past content rows. Now upload your Excel file again in Past content plans.`)}
+$('#cbad').onclick=cleanBad;$('#dsel').onclick=()=>{if(!selIds.size)return;if(!confirm('Delete '+selIds.size+' selected ideas?'))return;cur().i=cur().i.filter(x=>!selIds.has(x.id));selIds.clear();save();tbl();selUpd()};
+// ===== AUTO PLAN: old content + live market + SERP + competitors -> new monthly plan =====
+const apSleep=ms=>new Promise(r=>setTimeout(r,ms));
+const apClean=s=>String(s||'').replace(/\*\*/g,'').replace(/!\[[^\]]*\]\([^)]*\)/g,'').replace(/\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/\s+/g,' ').trim();
+const apHost=u=>{try{return new URL(/^https?:/.test(u)?u:'https://'+u).hostname.replace(/^www\./,'')}catch(e){return''}};
+let apLast=0;
+async function apRead(u){for(let a=0;a<2;a++){const w=apLast+3200-Date.now();if(w>0)await apSleep(w);apLast=Date.now();
+ try{const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),25000),r=await fetch('https://r.jina.ai/'+u,{headers:{Accept:'text/plain'},signal:ctl.signal});clearTimeout(tm);
+  if(r.status==429){await apSleep(12000);continue}if(!r.ok)return null;return await r.text()}catch(e){if(a)return null}}return null}
+function apSerp(t){const out=[];if(!t)return out;const re=/^## \[(.+?)\]\((https:\/\/duckduckgo\.com\/l\/\?uddg=([^&)]+)[^)]*)\)/gm;let m;
+ while((m=re.exec(t))&&out.length<10){let url;try{url=decodeURIComponent(m[3])}catch(e){continue}if(/duckduckgo\.com\/y\.js|ad_provider|bing\.com\/aclick/.test(url))continue;
+  const after=t.slice(re.lastIndex,re.lastIndex+2500),sn=(after.match(/\n\[([^!\]][^\]]{25,})\]\(https:\/\/duckduckgo/)||[])[1]||'';out.push({title:apClean(m[1]),url,dom:apHost(url),snip:apClean(sn)})}return out}
+const apNoise=/^(services?|contact|book|our |about|related|share|خدمات|تواصل|اتصل|احجز|احصل|مقالات ذات|شارك|اقرأ أيضا|اقرا ايضا|اقرأ ايضا|اقرا أيضا|من نحن|فروع|جدول المحتويات|table of contents|الخاتمة|خاتمة|الخلاصة|خلاصة|مقدمة|المقدمة|المراجع|المصادر|conclusion|summary|introduction|references|final thoughts)/i;
+function apHeads(t,dom){if(!t)return[];const lab=(dom||'').split('.')[0].toLowerCase();return t.split('\n').filter(l=>/^#{2,3} /.test(l)).map(l=>({lv:l.startsWith('###')?3:2,t:apClean(l.replace(/^#+\s*/,''))}))
+ .filter(h=>h.t.length>3&&h.t.length<110&&!apNoise.test(h.t)&&!(lab.length>3&&h.t.toLowerCase().replace(/\s/g,'').includes(lab)))}
+const apSlug=u=>{try{const p=new URL(u).pathname.split('/').filter(Boolean).pop()||'';const s=decodeURIComponent(p).replace(/\.(html?|php|aspx)$/,'').replace(/[-_+]+/g,' ').trim();return s.length>3&&!/^[\d\s]+$/.test(s)&&!/^[a-f0-9]{20,}$/.test(s)?s:''}catch(e){return''}};
+async function apComp(site){const base=(/^https?:/.test(site)?site:'https://'+site).replace(/\/+$/,'');let t=await apRead(base+'/sitemap.xml');if(!t||!/https?:\/\//.test(t))t=await apRead(base+'/sitemap_index.xml');if(!t)return null;
+ const links=x=>[...x.matchAll(/(https?:\/\/[^\s)\]<>"']+)/g)].map(m=>m[1]);let U=links(t);const subs=[...new Set(U.filter(u=>/sitemap[^/]*\.xml/i.test(u)&&!/\/sitemap(_index)?\.xml$/i.test(u)))];
+ if(subs.length){const pick=subs.filter(u=>/post|blog|article|news|مقال/i.test(u)).slice(0,2);const go=pick.length?pick:subs.slice(0,1);U=[];for(const s of go){const t2=await apRead(s);if(t2)U=U.concat(links(t2))}}
+ const bh=apHost(base);U=U.filter(u=>apHost(u).endsWith(bh)&&!/\.xml|\.(jpe?g|png|webp|gif|svg|pdf)(\?|$)|\/(tag|category|author|page|feed|wp-content)\//i.test(u));return[...new Set(U.map(apSlug).filter(Boolean))].slice(0,400)}
+function apOld(c){const O=[...(c.old||[]).map(o=>({t:o.t,k:o.k||o.t,u:o.u||''})),...(c.hist||[]).map(h=>({t:h.t,k:h.k||h.t,u:''}))],it={info:0,comm:0,trans:0,nav:0},fm={};
+ const gf=t=>/^(how|كيف)|طريقة/i.test(t)?'how-to guide':/best|top|أفضل|افضل/i.test(t)?'listicle':/ vs |مقارنة|الفرق/i.test(t)?'comparison':/^(what is|ما هو|ما هي)/i.test(t)?'glossary':/[?؟]/.test(t)?'FAQ':'article';
+ O.forEach(o=>{it[detect(o.k||o.t)]++;const f=gf(o.t);fm[f]=(fm[f]||0)+1});const ar=O.filter(o=>isAr(o.t||'')).length;return{O,n:O.length,ar,en:O.length-ar,it,fm}}
+function apGl(m){m=(m||'').toLowerCase();return/saudi|ksa|السعودية/.test(m)?'sa':/uae|emirates|dubai|الامارات|الإمارات/.test(m)?'ae':/usa|united states|america/.test(m)?'us':/uk|britain|england/.test(m)?'gb':'eg'}
+function apTopics(c){const p=c.p||{},m=(p.m||'').split(/[,،]/)[0].trim();let T=[];try{T=seeds(c,m,'BOTH')}catch(e){}
+ (p.prod||'').split(/[\n,،;]+/).map(x=>x.trim()).filter(x=>x.length>2).forEach(x=>{if(!T.some(y=>sim(x,y)>=.5))T.unshift(x)});return[...new Set(T)].slice(0,8)}
+function apLoad(){const c=cur();if(!$('#apm').value)$('#apm').value=$('#mo').value||new Date().toISOString().slice(0,7);if($('#apt').dataset.cl!=S.cur){$('#apt').value=apTopics(c).join('\n');$('#apt').dataset.cl=S.cur;$('#apn').value=+$('#n').value||8}
+ let h='';try{h=localStorage.getItem('cp_apr_'+(c.id||S.cur))||''}catch(e){}$('#apo').innerHTML=h;$('#app').innerHTML='';apBind()}
+function apBind(){const b=document.querySelector('#apo [data-apopen]');if(b)b.onclick=()=>document.querySelector('[data-t=b]').click()}
+const AP_STEPS=['Analyze old content plans','Research the live market (Google searches)','Analyze search results (SERP) and ranking pages','Analyze competitors’ sites','Find new ideas that are not in your old content','Build and save the monthly plan'];
+function apProg(s){$('#app').innerHTML='<div class="card"><b>Working… keep this tab open</b>'+AP_STEPS.map((t,i)=>`<div>${s[i]&&s[i].d?'✅':s[i]&&s[i].on?'⏳':'▫️'} ${t}${s[i]&&s[i].n?' <span class="mu">· '+esc(s[i].n)+'</span>':''}</div>`).join('')+'</div>'}
+async function apRun(){const c=cur(),p=c.p||{},N=Math.min(30,Math.max(2,+$('#apn').value||8)),lg=$('#apl').value,mo=$('#apm').value||new Date().toISOString().slice(0,7),K=+$('#apd').value||3;
+ let T=$('#apt').value.split('\n').map(s=>s.trim()).filter(Boolean);if(lg=='AR')T=T.filter(t=>isAr(t));if(lg=='EN')T=T.filter(t=>!isAr(t));T=T.slice(0,K+2);
+ if(!T.length)return alert(lg=='AUTO'||lg=='BOTH'?'Add at least one topic to research.':'None of the topics is in the language you chose. Add a topic in that language or set Language to Auto.');
+ const gl=apGl(p.m),own=apHost(p.site||''),st=AP_STEPS.map(()=>({})),go=(i,n)=>{st[i].on=1;if(n!=null)st[i].n=n;apProg(st)},ok=(i,n)=>{st[i].on=0;st[i].d=1;if(n!=null)st[i].n=n;apProg(st)};
+ // 1. old content
+ go(0);const oa=apOld(c);ok(0,oa.n+' saved titles');
+ // 2. market
+ go(1);const MK={};let mkN=0,mkFail=0;
+ for(const t of T){const hl=isAr(t)?'ar':'en',P=MKP[hl],Q=[t,...P.q.slice(0,9).map(q=>/^(near me|vs|review|price|cost|side effects)$/.test(q)?t+' '+q:q+' '+t)],M=new Map();
+  await Promise.all(Q.map(async q=>{try{(await gSuggest(q,hl,gl)).forEach(x=>{const k=x.s.toLowerCase();if(k==t.toLowerCase())return;const e=M.get(k)||{s:x.s,hits:0};e.hits++;M.set(k,e)})}catch(e){mkFail++}}));
+  MK[t]=[...M.values()].sort((a,b)=>b.hits-a.hits);mkN+=MK[t].length;go(1,mkN+' live searches')}
+ ok(1,mkN+' live searches'+(mkFail?' ('+mkFail+' lookups failed)':''));
+ // 3. SERP + ranking pages
+ go(2);const SE={},HD={},domC={};let serpOk=0;
+ for(const t of T.slice(0,K)){const kl=isAr(t)?'xa-ar':(gl=='us'?'us-en':gl=='gb'?'uk-en':'xa-en');const r=apSerp(await apRead('https://html.duckduckgo.com/html/?kl='+kl+'&q='+encodeURIComponent(t)));SE[t]=r;if(r.length)serpOk++;
+  r.forEach((x,i)=>{if(x.dom&&x.dom!=own)domC[x.dom]=(domC[x.dom]||0)+1});go(2,serpOk+'/'+Math.min(K,T.length)+' searches read');
+  const pages=r.filter(x=>x.dom!=own&&!/youtube|facebook|instagram|tiktok|wikipedia|reddit|quora/.test(x.dom)).slice(0,2);HD[t]=[];
+  for(const pg of pages){const h=apHeads(await apRead(pg.url),pg.dom);if(h.length)HD[t].push({dom:pg.dom,h})}}
+ ok(2,serpOk?serpOk+' result pages, '+Object.values(HD).reduce((a,x)=>a+x.length,0)+' ranking pages read':'search results could not be read');
+ // 4. competitors
+ go(3);let comps=[];try{comps=(await cpRows()).filter(x=>x.website).slice(0,3)}catch(e){}const CP=[];
+ for(const x of comps){const s=await apComp(x.website);CP.push({name:x.name,site:x.website,topics:s});go(3,CP.length+'/'+comps.length+' sites')}
+ ok(3,comps.length?CP.filter(x=>x.topics&&x.topics.length).length+'/'+comps.length+' competitor sites read':'no competitors with a website in the Competitors tab');
+ // 5. candidate ideas
+ go(4);const cov=s=>dup({kw:s,topic:s})||c.i.some(y=>sim(s,y.kw||'')>=.6||sim(s,y.topic||'')>=.6),C=new Map(),toks=s=>s.toLowerCase().split(/\s+/).filter(w=>w.length>2);
+ const add=(s,t,w,why)=>{s=apClean(s).replace(/[|].*$/,'').trim();if(s.length<5||s.length>95)return;const k=s.toLowerCase();if(cov(s))return;const e=C.get(k)||{s,t,sc:0,why:new Set(),lang:isAr(s)?'AR':'EN'};e.sc+=w;e.why.add(why);C.set(k,e)};
+ T.forEach(t=>(MK[t]||[]).forEach(x=>add(x.s,t,x.hits*3,'searched on Google'+(x.hits>1?' ('+x.hits+'×)':''))));
+ T.forEach(t=>(HD[t]||[]).forEach(pg=>pg.h.filter(h=>/[?؟]$/.test(h.t)||/^(how|what|why|can|is|does|كيف|ما|هل|لماذا|متى|كم)\b/i.test(h.t)).forEach(h=>add(h.t,t,2,'question answered by top-ranking pages'))));
+ const fq={};oa.O.forEach(o=>new Set(toks(o.t)).forEach(w=>fq[w]=(fq[w]||0)+1));const gen=w=>oa.n>=3&&(fq[w]||0)/oa.n>.4,dt=s=>toks(s).filter(w=>!gen(w));CP.forEach(x=>(x.topics||[]).filter(s=>toks(s).length).slice(0,40).forEach(s=>{const t=T.find(t=>dt(t).some(w=>dt(s).includes(w)))||(ar0=>ar0?'فجوات المنافسين':'Competitor gaps')(isAr(s));add(s,t,3,'competitor '+(x.name||apHost(x.site))+' covers it')}));
+ Object.values(SE).flat().forEach(r=>{const tw=new Set(toks(r.title));C.forEach(e=>{if(toks(e.s).filter(w=>tw.has(w)).length>=2)e.sc+=.5})});
+ let pool=[...C.values()];if(lg=='AR')pool=pool.filter(e=>e.lang=='AR');if(lg=='EN')pool=pool.filter(e=>e.lang=='EN');
+ if(lg=='AUTO'&&oa.n){const want=oa.ar>=oa.en?'AR':'EN';if(pool.filter(e=>e.lang==want).length>=N)pool=pool.filter(e=>e.lang==want)}
+ pool.forEach(e=>{const P=MKP[e.lang=='AR'?'ar':'en'];e.intent=P.buy.test(e.s)?'trans':P.cmp.test(e.s)?'comm':detect(e.s);e.fmt=mkFmt(e.s,P)});pool.sort((a,b)=>b.sc-a.sc);
+ if(pool.length<N){try{$('#ng').value=N*2;$('#ngl').value=lg;makeIdeas();(genL||[]).forEach(g=>{if(!pool.some(e=>sim(e.s,g.kw)>=.5))pool.push({s:g.topic,t:g.cluster,sc:0,why:new Set(['built from your old content topics']),lang:g.lang,intent:g.intent,fmt:g.format})});$('#ngo').innerHTML=''}catch(e){}}
+ ok(4,pool.length+' new candidate ideas');
+ // 6. select + plan
+ go(5);const q=c.q||{info:40,comm:30,trans:20,nav:10},pick=[],per={},cap=Math.max(2,Math.ceil(N/Math.max(1,T.length))+1);
+ const take=e=>{if(pick.length>=N||pick.includes(e)||(per[e.t]||0)>=cap||pick.some(y=>sim(y.s,e.s)>=.5))return 0;per[e.t]=(per[e.t]||0)+1;pick.push(e);return 1};
+ for(const k of['info','comm','trans','nav']){let n=Math.round(N*(q[k]||0)/100);for(const e of pool){if(n<=0)break;if(e.intent==k)n-=take(e)}}
+ for(const e of pool)take(e);for(const e of pool){if(pick.length>=N)break;if(!pick.includes(e)&&!pick.some(y=>sim(y.s,e.s)>=.5)){pick.push(e)}}
+ if(!pick.length){$('#app').innerHTML='<div class="card wr">No new ideas could be found. Check your internet connection, add topics, or add competitors with websites, then try again.</div>';return}
+ let rest=pick.slice(),ord=[];while(rest.length){const pv=ord[ord.length-1];const i=rest.findIndex(x=>!pv||x.fmt!=pv.fmt);ord.push(...rest.splice(i<0?0:i,1))}
+ const yr=mo.slice(0,4),cap1=s=>s.charAt(0).toUpperCase()+s.slice(1),items=[];
+ ord.forEach((e,i)=>{const ar=e.lang=='AR',H=(HD[e.t]||[]).flatMap(pg=>pg.h.filter(h=>h.lv==2).map(h=>h.t)).filter(h=>isAr(h)==ar),G=[];
+  H.forEach(h=>{const g=G.find(x=>sim(x.h,h)>=.65);g?g.n++:G.push({h,n:1})});G.sort((a,b)=>b.n-a.n);
+  let heads=G.slice(0,6).map(g=>({h2:g.h,h3:[]}));if(heads.length<3)heads=heads.concat(((ar?OUTA:OUT)[e.fmt]||[]).map(h=>({h2:h,h3:[]}))).slice(0,6);
+  const faqs=(MK[e.t]||[]).map(x=>x.s).filter(s=>MKP[ar?'ar':'en'].qq.test(s)&&sim(s,e.s)<.8).slice(0,4);
+  const links=oa.O.filter(o=>sim(o.t,e.s)>=.2||toks(o.t).filter(w=>toks(e.s).includes(w)).length>=2).slice(0,3).map(o=>o.t+(o.u?' → '+o.u:''));
+  const ti=ar?e.s:cap1(e.s),idea=mk(ti,e.s,e.intent,e.fmt,e.t,e.lang,0,0,'','planned','Auto plan');
+  idea.ob={titles:ar?[e.s+': دليل شامل '+yr,e.s+' | كل ما تحتاج معرفته']:[cap1(e.s)+': The Complete '+yr+' Guide',cap1(e.s)+': Everything You Need to Know'],meta:'',headings:heads,links:links.length?links:[ar?'لا توجد مقالات قديمة مرتبطة':'No related old posts'],faqs,cta:(ar?CTAA:CTA)[idea.stage]};
+  c.i.push(idea);items.push({...idea,wk:Math.floor(i*4/ord.length)+1,why:'Auto plan · '+[...e.why].slice(0,3).join(' · ')+' · not in your old content'})});
+ $('#mo').value=mo;$('#n').value=N;plan=items;flags=[];curPlanId=null;save();tbl();planSave(true);show();ok(5,items.length+' posts planned and saved');
+ // report
+ const bar=(o,keys,lab)=>keys.map(k=>`<div class="bar"><span>${esc(lab?lab(k):k)}</span><i style="width:${(o[k]||0)/Math.max(1,...Object.values(o))*120}px"></i><span>${o[k]||0}</span></div>`).join('');
+ const under=Object.keys(INT).filter(k=>oa.n&&(oa.it[k]/oa.n*100)<(q[k]||0)-10);const topD=Object.entries(domC).sort((a,b)=>b[1]-a[1]).slice(0,8);
+ const ownRank=Object.entries(SE).map(([t,r])=>{const i=r.findIndex(x=>x.dom==own);return own&&i>=0?`${esc(t)}: #${i+1}`:''}).filter(Boolean);
+ const html=`<div class="card"><b>Plan created for ${esc(mo)}</b> <span class="mu">${new Date().toLocaleString()}</span><p>${items.length} new posts, saved to Plan history and added to the Idea bank. None repeat your ${oa.n} saved titles.</p><ol dir="auto">${items.map(x=>`<li>${esc(x.topic)} <span class="tag">${INT[x.intent]}</span> <span class="tag">${esc(x.format)}</span></li>`).join('')}</ol><button class="p" data-apopen>Open in Monthly plan</button></div>
+ <div class="g"><div class="card"><b>Old content analysis</b><p>${oa.n} titles · ${oa.ar} Arabic · ${oa.en} English</p><div class="mu">Intent mix</div>${bar(oa.it,Object.keys(INT),k=>INT[k])}<div class="mu" style="margin-top:6px">Formats used</div>${bar(oa.fm,Object.keys(oa.fm))}${under.length?`<p class="wr">Under-covered: ${under.map(k=>INT[k]).join(', ')}</p>`:''}</div>
+ <div class="card"><b>Market (live Google searches)</b>${T.map(t=>`<p dir="auto"><b>${esc(t)}</b> · ${(MK[t]||[]).length} searches<br><span class="mu">${(MK[t]||[]).slice(0,5).map(x=>esc(x.s)).join(' · ')||'none found'}</span></p>`).join('')}</div>
+ <div class="card"><b>Search results (SERP)</b>${Object.keys(SE).map(t=>`<p dir="auto"><b>${esc(t)}</b><br>${SE[t].slice(0,5).map((r,i)=>`${i+1}. ${esc(r.title)} <span class="mu">${esc(r.dom)}</span>`).join('<br>')||'<span class="mu">could not be read</span>'}</p>`).join('')}${ownRank.length?`<p>Your site ranks for: ${ownRank.join(', ')}</p>`:own?'<p class="mu">Your site was not in the top results for these topics.</p>':''}</div>
+ <div class="card"><b>Who ranks most</b>${topD.map(([d,n])=>`<div>${esc(d)} <span class="mu">· ${n}</span></div>`).join('')||'<span class="mu">No data</span>'}<div class="mu" style="margin-top:6px">Subtopics top pages cover</div>${Object.keys(HD).map(t=>(HD[t]||[]).flatMap(pg=>pg.h.filter(h=>h.lv==2).slice(0,4).map(h=>`<div dir="auto">· ${esc(h.t)}</div>`)).join('')).join('')||'<span class="mu">No pages read</span>'}</div>
+ <div class="card"><b>Competitors</b>${CP.map(x=>{const g=(x.topics||[]).filter(s=>!dup({kw:s,topic:s}));return`<p dir="auto"><b>${esc(x.name)}</b> · ${x.topics?x.topics.length+' articles found':'site could not be read'}${g.length?`<br><span class="mu">Topics they cover that you don’t: ${g.slice(0,8).map(esc).join(' · ')}</span>`:''}</p>`}).join('')||'<span class="mu">Add competitors with their websites in the Competitors tab to include them.</span>'}</div></div>`;
+ $('#apo').innerHTML=html;try{localStorage.setItem('cp_apr_'+(c.id||S.cur),html)}catch(e){}apBind()}
+$('#apb').onclick=async()=>{const b=$('#apb');b.disabled=true;try{await apRun()}catch(e){$('#app').innerHTML='<div class="card wr">Something went wrong: '+esc(e.message||e)+'</div>'}finally{b.disabled=false}};
+// ===== AUTO PLAN · 3 STEPS: topics -> SERP analysis -> ideas & plan =====
+let RS={topics:[],an:{},ideas:[]};
+const arN=s=>String(s||'').toLowerCase().replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/[\u064B-\u0652\u0640]/g,'').replace(/[?؟:,.،()"'«»!|–-]/g,' ');
+const NSTOP=new Set('في من على عن مع او أو و ما هو هي هل كيف متى لماذا كم the a an of for in to and or is are how what why when your with'.split(' '));
+const NSYN={'اسعار':'سعر','تكلفه':'سعر','تكاليف':'سعر','بكام':'سعر','price':'سعر','prices':'سعر','cost':'سعر','costs':'سعر','مراحل':'خطوات','طريقه':'خطوات','steps':'خطوات','stages':'خطوات','process':'خطوات','اضرار':'مخاطر','عيوب':'مخاطر','مضاعفات':'مخاطر','risks':'مخاطر','side':'مخاطر','انواع':'نوع','types':'نوع','type':'نوع','مميزات':'فوائد','benefits':'فوائد','advantages':'فوائد','pros':'فوائد','شروط':'شروط','requirements':'شروط','candidates':'شروط','نصائح':'نصائح','tips':'نصائح','faq':'اسئله','questions':'اسئله','الاسئله':'اسئله','اسئله':'اسئله'};
+const NFILL=new Set('بالتفصيل عمليه جراحه كامل الكامل شامل الشامل كل your complete full guide دليل مصر القاهره السعوديه الرياض جده الامارات دبي الكويت قطر egypt cairo saudi uae dubai'.split(' '));
+const ntok=(s,drop)=>new Set(arN(s).split(/\s+/).map(w=>NSYN[w]||w).filter(w=>w.length>1&&!/^\d+$/.test(w)&&!NSTOP.has(w)&&!NFILL.has(w)&&!(drop&&drop.has(w))));
+function nsim(a,b,drop){let A=ntok(a,drop),B=ntok(b,drop);if(!A.size||!B.size){A=ntok(a);B=ntok(b)}let n=0;A.forEach(w=>{if(B.has(w))n++});return n/(A.size+B.size-n||1)}const rsKey=t=>String(t||'').trim().toLowerCase();
+const PTYPE=r=>{const s=(r.title+' '+r.url).toLowerCase(),d=r.dom||'';return/vezeeta|whatclinic|bookimed|yelp|tripadvisor|doctoruna|tebcan|curaa|practo/.test(d)?'directory':/youtube|tiktok|instagram|facebook/.test(d)?'video / social':/reddit|quora|forum|منتدى/.test(s)?'forum / Q&A':/سعر|اسعار|أسعار|تكلفة|price|cost|بكام/.test(s)?'price page':/أفضل|افضل|best|top \d|\d+ (افضل|best)/.test(s)?'list':/دليل|guide|كيف|how to|خطوات|steps|شامل|complete/.test(s)?'guide':/wiki|altibbi|webteb|mayoclinic|healthline|clevelandclinic|medical|طبي/.test(s)?'medical info':(()=>{try{return new URL(r.url).pathname.split('/').filter(Boolean).length<=1?'home / service page':'article'}catch(e){return'article'}})()};
+const PTPL={guide:'guides',list:'lists','price page':'price pages',directory:'directories','video / social':'videos or social posts','forum / Q&A':'forum or Q&A pages','medical info':'medical info pages','home / service page':'home or service pages',article:'articles'};
+function rsWant(c){const lg=$('#s1l').value,oa=apOld(c),p=c.p||{};return lg=='AUTO'?(oa.n?(oa.ar>=oa.en?'AR':'EN'):(isAr(p.prod||'')?'AR':'EN')):lg}
+async function s1Run(){const c=cur(),p=c.p||{},m=(p.m||'').split(/[,،]/)[0].trim(),gl=apGl(p.m),want=rsWant(c),okL=s=>want=='BOTH'||(want=='AR')==isAr(s),o=$('#s1o');
+ const C=[],add=(s,w,why)=>{s=apClean(s).replace(/\s+[|–]\s.*$/,'').trim();if(s.length<3||s.length>70||!okL(s))return;let e=C.find(x=>sim(x.t,s)>=.6);if(!e){e={t:s,sc:0,why:new Set()};C.push(e)}e.sc+=w;e.why.add(why)};
+ const P=t=>{o.innerHTML='<div class="mu">'+esc(t)+'</div>'};P('Collecting topics…');
+ (p.prod||'').split(/[\n,،;]+/).forEach(x=>add(x,5,'client product / service'));
+ let sd=[];try{sd=seeds(c,m,'BOTH')}catch(e){}sd.forEach(x=>add(x,2,'cluster in your old content'));
+ P('Reading live Google searches…');for(const b of C.slice().sort((a,b)=>b.sc-a.sc).slice(0,5).map(e=>e.t)){try{(await gSuggest(b,isAr(b)?'ar':'en',gl)).slice(0,8).forEach(x=>add(x.s,2,'searched on Google'))}catch(e){}}
+ let comps=[];try{comps=(await cpRows()).filter(x=>x.website).slice(0,3)}catch(e){}
+ for(const [i,x] of comps.entries()){P('Reading competitor sites… '+(i+1)+'/'+comps.length+' ('+x.name+')');const s=await apComp(x.website);(s||[]).filter(t=>!dup({kw:t,topic:t})).slice(0,25).forEach(t=>add(t,3,'competitor '+x.name+' writes about it'))}
+ RS.topics=C.map(e=>({t:e.t,sc:e.sc,why:[...e.why],cov:!!dup({kw:e.t,topic:e.t})})).sort((a,b)=>(a.cov-b.cov)||b.sc-a.sc).slice(0,24);
+ if(!RS.topics.length){o.innerHTML='<div class="wr">No topics found. Add the client’s products in Profile, old content plans, or competitors with websites, then try again. You can also type your own topic above.</div>';return}
+ RS.topics.forEach((x,i)=>x.on=!x.cov&&i<5);s1Show()}
+function s1Show(){const o=$('#s1o');o.innerHTML=`<div class="sc"><table><tr><th></th><th>Topic</th><th>Why</th><th>Status</th></tr>${RS.topics.map((x,i)=>`<tr><td><input type="checkbox" data-s1="${i}" ${x.on?'checked':''}></td><td dir="auto"><b>${esc(x.t)}</b></td><td class="mu" dir="auto">${x.why.map(esc).join(' · ')}</td><td class="${x.cov?'mu':'wr'}">${x.cov?'you already have posts on this':'new'}</td></tr>`).join('')}</table></div><div class="mu" style="margin-top:4px">Tick the topics to analyze, then click Analyze SERP in Step 2. Topics you already have posts on can still give new angles.</div>`;
+ o.querySelectorAll('[data-s1]').forEach(e=>e.onchange=()=>{RS.topics[+e.dataset.s1].on=e.checked})}
+async function rsLoadSaved(t){const c=cur(),k=rsKey(t);c.serp=c.serp||{};if(c.serp[k])return c.serp[k];
+ if(CLOUD&&c.id){try{const r=await sb.from('serp_analyses').select('data').eq('client_id',c.id).eq('topic',k).order('created_at',{ascending:false}).limit(1);if(r.data&&r.data[0]){c.serp[k]=r.data[0].data;return c.serp[k]}}catch(e){}}return null}
+async function rsSave(t,d){const c=cur(),k=rsKey(t);c.serp=c.serp||{};c.serp[k]=d;if(CLOUD){try{await ensureId();const r=await sb.from('serp_analyses').insert({client_id:c.id,topic:k,lang:d.lang,data:d});if(r.error)setSv('Analysis not saved for the team. Run the SERP database update in Supabase. ('+r.error.message+')',1)}catch(e){}}else save()}
+async function rsAnalyze(t,force,prog){if(!force){const s=await rsLoadSaved(t);if(s&&Date.now()-new Date(s.at)<30*864e5)return s}
+ const c=cur(),p=c.p||{},gl=apGl(p.m),hl=isAr(t)?'ar':'en',own=apHost(p.site||'');let comps=[];try{comps=(await cpRows()).filter(x=>x.website).map(x=>({n:x.name,h:apHost(x.website)}))}catch(e){}
+ prog('reading the search results');const kl=hl=='ar'?'xa-ar':(gl=='us'?'us-en':gl=='gb'?'uk-en':'xa-en');const R=apSerp(await apRead('https://html.duckduckgo.com/html/?kl='+kl+'&q='+encodeURIComponent(t)));
+ if(!R.length)throw new Error('The search results could not be read right now. Wait a minute and try again.');
+ R.forEach(r=>{r.type=PTYPE(r);r.comp=(comps.find(x=>x.h&&r.dom.endsWith(x.h))||{}).n||'';r.own=!!own&&r.dom.endsWith(own)});
+ const pages=[];for(const r of R.filter(r=>!r.own&&!/youtube|facebook|instagram|tiktok|reddit|quora|wikipedia/.test(r.dom))){if(pages.length>=5)break;prog('reading ranking page '+(pages.length+1)+'/5: '+r.dom);const tx=await apRead(r.url);if(!tx)continue;const body=tx.split('Markdown Content:')[1]||tx,h=apHeads(tx,r.dom);if(!h.length)continue;pages.push({dom:r.dom,url:r.url,title:r.title,type:r.type,rank:R.indexOf(r)+1,words:body.split(/\s+/).filter(Boolean).length,h})}
+ const sameL=s=>isAr(s)==(hl=='ar'),drop=ntok(t),G=[],HT=pages.flatMap(pg=>pg.h.filter(h=>h.lv==2&&sameL(h.t)).map(h=>h.t)),fq={};HT.forEach(h=>ntok(h,drop).forEach(w=>fq[w]=(fq[w]||0)+1));
+ const gw=new Set(Object.keys(fq).filter(w=>HT.length>=4&&fq[w]/HT.length>.4)),tk=h=>{const x=ntok(h,drop);gw.forEach(w=>x.delete(w));return x},hm=(a,b)=>{const A=tk(a),B=tk(b);if(!A.size||!B.size)return arN(a).trim()==arN(b).trim();let n=0;A.forEach(w=>{if(B.has(w))n++});return n>0&&(n/(A.size+B.size-n)>=.6||n==Math.min(A.size,B.size))};
+ pages.forEach((pg,pi)=>pg.h.filter(h=>h.lv==2&&sameL(h.t)).forEach(h=>{let g=G.find(x=>hm(x.h,h.t));if(!g){g={h:h.t,pg:new Set()};G.push(g)}g.pg.add(pi)}));
+ const heads=G.map(g=>({h:g.h,n:g.pg.size})).sort((a,b)=>b.n-a.n).slice(0,20);
+ prog('reading the questions people ask');const P=MKP[hl],QQ=new Map();for(const pre of(hl=='ar'?['كيف','هل','ما هو','كم','لماذا','متى']:['how','what','why','can','is','does'])){try{(await gSuggest(pre+' '+t,hl,gl)).forEach(x=>{if(P.qq.test(x.s))QQ.set(rsKey(x.s).replace(/[?؟\s]+$/,''),x.s)})}catch(e){}}
+ pages.forEach(pg=>pg.h.forEach(h=>{if(/[?؟]$/.test(h.t)&&sameL(h.t)&&!QQ.has(rsKey(h.t).replace(/[?؟\s]+$/,'')))QQ.set(rsKey(h.t).replace(/[?؟\s]+$/,''),h.t)}));
+ const allH=pages.flatMap(pg=>pg.h.map(h=>h.t)),qs=[...QQ.values()].slice(0,20).map(q=>({q,gap:!allH.some(h=>nsim(h,q,drop)>=.34)}));
+ const N=[],np=pages.length,cnt=f=>pages.filter(f).length,ty={};R.forEach(r=>ty[r.type]=(ty[r.type]||0)+1);const dt=Object.entries(ty).sort((a,b)=>b[1]-a[1])[0];
+ if(dt)N.push(`${dt[1]} of the top ${R.length} results are ${PTPL[dt[0]]||dt[0]}`);
+ if(np){const pr=cnt(pg=>/سعر|اسعار|أسعار|تكلفة|price|cost|بكام/i.test(pg.title+' '+pg.h.map(h=>h.t).join(' ')));if(pr)N.push(`${pr} of ${np} top pages talk about prices`);
+  const fq=cnt(pg=>pg.h.some(h=>/faq|frequently|الأسئلة الشائعة|الاسئلة الشائعة|أسئلة شائعة|اسئلة شائعة/i.test(h.t)));if(fq)N.push(`${fq} of ${np} top pages have an FAQ section`);
+  const avg=Math.round(pages.reduce((a,pg)=>a+pg.words,0)/np/100)*100;if(avg)N.push(`Top pages are about ${avg.toLocaleString()} words long on average, so aim for at least that`);
+  const ah=Math.round(pages.reduce((a,pg)=>a+pg.h.filter(h=>h.lv==2).length,0)/np);if(ah)N.push(`Top pages use about ${ah} H2 sections`)}
+ const yr=new Date().getFullYear(),yc=R.filter(r=>r.title.includes(String(yr))||r.title.includes(String(yr+1))).length;if(yc>=2)N.push(`${yc} top titles include the year, so add it to yours`);
+ const ow=R.findIndex(r=>r.own);if(own)N.push(ow>=0?`Your site ranks #${ow+1} for this topic`:`Your site is not in the top ${R.length} results`);
+ const cr=R.filter(r=>r.comp);if(cr.length)N.push('Competitors in the top results: '+[...new Set(cr.map(r=>r.comp+' (#'+(R.indexOf(r)+1)+')'))].join(', '));
+ const gq=qs.filter(x=>x.gap).length;if(gq)N.push(`${gq} questions people search do not appear as headings on the top pages: a likely opportunity`);
+ if(R.filter(r=>r.type=='directory').length>=3)N.push('Directories take many top spots, so a strong service page may compete better than a blog post');
+ const d={topic:t,lang:hl=='ar'?'AR':'EN',at:new Date().toISOString(),results:R,pages:pages.map(({h,...x})=>({...x,h2:h.filter(y=>y.lv==2).length})),heads,qs,notes:N};
+ await rsSave(t,d);return d}
+async function s2Run(){const T=RS.topics.filter(x=>x.on).map(x=>x.t);if(!T.length)return alert('Tick at least one topic in Step 1 (or add your own).');
+ const b=$('#s2b');b.disabled=true;RS.an={};$('#s2o').innerHTML='';
+ for(const [i,t] of T.entries()){const pr=s=>$('#s2p').textContent=`Topic ${i+1}/${T.length} “${t}”: ${s}…`;try{RS.an[rsKey(t)]=await rsAnalyze(t,false,pr)}catch(e){RS.an[rsKey(t)]={topic:t,err:e.message||String(e)}}s2Show()}
+ $('#s2p').textContent='Done. Tick what you want to keep, then go to Step 3.';b.disabled=false}
+function s2Show(){const o=$('#s2o');o.innerHTML=Object.entries(RS.an).map(([k,d])=>{if(d.err)return`<div class="card wr" dir="auto"><b>${esc(d.topic)}</b>: ${esc(d.err)} <button data-rf="${esc(k)}">Try again</button></div>`;
+ const ck=(kind,i,on,label,extra)=>`<label style="display:block;margin:2px 0" dir="auto"><input type="checkbox" data-rk="${esc(k)}" data-kind="${kind}" data-i="${i}" ${on?'checked':''}> ${label}${extra||''}</label>`,np=d.pages.length||1;
+ return`<details class="card" open dir="auto"><summary><b>${esc(d.topic)}</b> <span class="mu">· analyzed ${new Date(d.at).toLocaleDateString()} · ${d.pages.length} pages read</span> <button data-rf="${esc(k)}" style="margin-inline-start:8px">Refresh</button></summary>
+ <div class="g" style="margin-top:8px"><div><b>Notes</b>${d.notes.map((n,i)=>ck('n',i,1,esc(n))).join('')||'<div class="mu">No notes</div>'}</div>
+ <div><b>Winning headings</b> <span class="mu">(how many of the ${d.pages.length} top pages use it)</span>${d.heads.map((h,i)=>{const rl=relTo(h.h,d.topic);return ck('h',i,rl&&(h.n>=2||i<6),esc(h.h),` <span class="tag">${h.n}/${np}</span>`+(rl?'':' <span class="tag" style="color:var(--wr)">off-topic?</span>'))}).join('')||'<div class="mu">No headings could be read</div>'}</div>
+ <div><b>Questions people ask</b>${d.qs.map((q,i)=>ck('q',i,q.gap&&i<8,esc(q.q),q.gap?' <span class="tag">not a heading on top pages</span>':'')).join('')||'<div class="mu">No questions found</div>'}</div></div>
+ <details style="margin-top:6px"><summary>Top ${d.results.length} results</summary>${d.results.map((r,i)=>`<div dir="auto">${i+1}. <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a> <span class="mu">${esc(r.dom)}</span> <span class="tag">${esc(r.type)}</span>${r.own?' <span class="tag">your site</span>':''}${r.comp?' <span class="tag">competitor: '+esc(r.comp)+'</span>':''}</div>`).join('')}</details></details>`}).join('');
+ o.querySelectorAll('[data-rf]').forEach(b=>b.onclick=async e=>{e.preventDefault();const k=b.dataset.rf,t=(RS.an[k]||{}).topic||k;b.disabled=true;try{RS.an[k]=await rsAnalyze(t,true,s=>$('#s2p').textContent=`“${t}”: ${s}…`)}catch(err){RS.an[k]={topic:t,err:err.message||String(err)}}$('#s2p').textContent='';s2Show()})}
+function s3Build(){const c=cur(),p=c.p||{},yr=String(new Date().getFullYear()),I=[];
+ const seen=(kw,topic)=>dup({kw,topic})||c.i.some(y=>sim(kw,y.kw||'')>=.6||sim(topic,y.topic||'')>=.6);
+ Object.entries(RS.an).forEach(([k,d])=>{if(d.err)return;const ar=d.lang=='AR',sel=kind=>[...document.querySelectorAll('#s2o input[data-kind="'+kind+'"]:checked')].filter(e=>e.dataset.rk==k).map(e=>+e.dataset.i);
+  const H=sel('h').map(i=>d.heads[i].h),Q=sel('q').map(i=>d.qs[i]),NT=sel('n').map(i=>d.notes[i]);if(!H.length&&!Q.length&&!NT.length)return;
+  const ty={};d.results.forEach(r=>ty[r.type]=(ty[r.type]||0)+1);const top=(Object.entries(ty).sort((a,b)=>b[1]-a[1])[0]||['guide'])[0];
+  const fmt={guide:'how-to guide',list:'listicle','price page':'listicle',directory:'listicle','forum / Q&A':'FAQ','medical info':'how-to guide'}[top]||'how-to guide';
+  const mk0=(p.m||'').split(/[,،]/)[0].trim(),m=mk0&&isAr(mk0)==ar?mk0:'',T=d.topic.replace(/^(أفضل|افضل|best)\s+/i,''),Tc=ar?T:T.charAt(0).toUpperCase()+T.slice(1);
+  const isQ=MKP[ar?'ar':'en'].qq.test(d.topic);const title=isQ?d.topic:top=='price page'?(ar?`سعر ${T}${m?' في '+m:''} ${yr}`:`${Tc} Price${m?' in '+m:''} (${yr})`):fmt=='listicle'?(ar?`أفضل ${T}${m?' في '+m:''} ${yr}`:`Best ${Tc}${m?' in '+m:''} (${yr})`):(ar?`${T}: دليل شامل ${yr}`:`${Tc}: The Complete ${yr} Guide`);
+  const fmt2=isQ?(/^(كيف|how)/i.test(d.topic)?'how-to guide':'FAQ'):fmt;const intent=isQ?'info':top=='price page'?'trans':fmt=='listicle'?'comm':'info',why='SERP: '+(NT[0]||'built from the winning headings');
+  I.push({topic:title,kw:T,intent,fmt:fmt2,cluster:d.topic,lang:d.lang,heads:H,faqs:Q.map(x=>x.q),notes:NT,why});
+  if(!isQ&&top!='price page'&&NT.some(n=>/prices/.test(n)))I.push({topic:ar?`سعر ${T}${m?' في '+m:''} ${yr}`:`${Tc} Price${m?' in '+m:''} (${yr})`,kw:ar?'سعر '+T:T+' price',intent:'trans',fmt:'listicle',cluster:d.topic,lang:d.lang,heads:H.filter(h=>/سعر|اسعار|أسعار|تكلفة|price|cost|عوامل|factors/i.test(h)),faqs:Q.filter(x=>/سعر|بكام|كم|cost|price|how much/i.test(x.q)).map(x=>x.q),notes:NT.filter(n=>/prices|words|year/.test(n)),why:'SERP: top pages talk about prices'});
+  Q.filter(x=>x.gap).slice(0,4).forEach(x=>{const f=/^(كيف|how)/i.test(x.q)?'how-to guide':'FAQ';I.push({topic:x.q,kw:x.q,intent:'info',fmt:f,cluster:d.topic,lang:d.lang,heads:[],faqs:Q.filter(y=>y.q!=x.q&&sim(y.q,x.q)>=.3).map(y=>y.q).slice(0,3),notes:NT.filter(n=>/questions|words/.test(n)),why:'SERP: people search this and the top pages do not answer it'})})});
+ if(!I.length)return alert('Run Step 2 and tick at least one heading, question or note.');
+ const out=[];I.forEach(x=>{if(out.some(y=>sim(y.kw,x.kw)>=.7))return;x.cov=!!seen(x.kw,x.topic);x.inc=!x.cov;out.push(x)});RS.ideas=out;s3Show()}
+function s3Show(){const o=$('#s3o'),n=RS.ideas.filter(x=>x.inc).length,mo=$('#apm').value||$('#mo').value||new Date().toISOString().slice(0,7);
+ o.innerHTML=`<div class="sc"><table><tr><th></th><th>Idea title</th><th>Keyword</th><th>Intent</th><th>Format</th><th></th></tr>${RS.ideas.map((x,i)=>`<tr><td><input type="checkbox" data-s3i="${i}" ${x.inc?'checked':''}></td><td><input data-s3="${i}" data-f="topic" value="${esc(x.topic)}" dir="auto" style="min-width:260px"></td><td><input data-s3="${i}" data-f="kw" value="${esc(x.kw)}" dir="auto"></td><td><select data-s3="${i}" data-f="intent">${iopt(x.intent)}</select></td><td><select data-s3="${i}" data-f="fmt">${opt(FM,x.fmt)}</select></td><td class="mu">${x.cov?'<span class="wr">close to old content</span>':''}</td></tr>
+ <tr><td></td><td colspan="5"><details dir="auto"><summary class="mu">${x.heads.length} headings · ${x.faqs.length} FAQs · ${x.notes.length} notes · ${esc(x.why)}</summary>${x.heads.length?'<b>Outline (H2)</b><ol>'+x.heads.map(h=>'<li>'+esc(h)+'</li>').join('')+'</ol>':''}${x.faqs.length?'<b>FAQ</b><ul>'+x.faqs.map(h=>'<li>'+esc(h)+'</li>').join('')+'</ul>':''}${x.notes.length?'<b>Notes from the analysis</b><ul>'+x.notes.map(h=>'<li>'+esc(h)+'</li>').join('')+'</ul>':''}</details></td></tr>`).join('')}</table></div>
+ <div class="row" style="margin-top:8px">Month <input type="month" id="s3m" value="${esc(mo)}"> Posts <input type="number" id="s3n" value="${n}" min="1"><button class="p" id="s3p">Create plan</button><span class="mu">The plan is saved to Plan history and the ideas are added to the Idea bank.</span></div>`;
+ o.querySelectorAll('[data-s3i]').forEach(e=>e.onchange=()=>{RS.ideas[+e.dataset.s3i].inc=e.checked;$('#s3n').value=RS.ideas.filter(x=>x.inc).length});
+ o.querySelectorAll('[data-s3]').forEach(e=>e.onchange=()=>{RS.ideas[+e.dataset.s3][e.dataset.f]=e.value.trim()});$('#s3p').onclick=s3Plan}
+function s3Plan(){const c=cur(),inc=RS.ideas.filter(x=>x.inc&&x.topic);if(!inc.length)return alert('Tick at least one idea.');const mo=$('#s3m').value||new Date().toISOString().slice(0,7),N=Math.min(inc.length,Math.max(1,+$('#s3n').value||inc.length)),L=inc.slice(0,N);
+ let rest=L.slice(),ord=[];while(rest.length){const pv=ord[ord.length-1];const i=rest.findIndex(x=>!pv||x.fmt!=pv.fmt||x.cluster!=pv.cluster);ord.push(...rest.splice(i<0?0:i,1))}
+ const oa=apOld(c),toks=s=>String(s).toLowerCase().split(/\s+/).filter(w=>w.length>2),yr=mo.slice(0,4),items=[];
+ ord.forEach((x,i)=>{const ar=x.lang=='AR',links=oa.O.filter(o=>sim(o.t,x.kw)>=.2||toks(o.t).filter(w=>toks(x.kw).includes(w)).length>=2).slice(0,3).map(o=>o.t+(o.u?' → '+o.u:''));
+  const idea=mk(x.topic,x.kw,x.intent,x.fmt,x.cluster,x.lang,0,0,'','planned','Auto plan · SERP');
+  idea.ob={titles:[x.topic,ar?x.kw+' | كل ما تحتاج معرفته':x.kw.charAt(0).toUpperCase()+x.kw.slice(1)+': Everything You Need to Know'],meta:'',headings:(x.heads.length?x.heads:((ar?OUTA:OUT)[x.fmt]||[])).map(h=>({h2:h,h3:[]})),links:links.length?links:[ar?'لا توجد مقالات قديمة مرتبطة':'No related old posts'],faqs:x.faqs,cta:(ar?CTAA:CTA)[idea.stage],notes:x.notes,picked:true};
+  c.i.push(idea);items.push({...idea,wk:Math.floor(i*4/ord.length)+1,why:'Auto plan · '+x.why})});
+ $('#mo').value=mo;$('#n').value=N;plan=items;flags=[];curPlanId=null;save();tbl();planSave(true);show();setSv(items.length+' posts planned and saved to Plan history');document.querySelector('[data-t=b]').click()}
+$('#s1b').onclick=async()=>{const b=$('#s1b');b.disabled=true;try{await s1Run()}catch(e){$('#s1o').innerHTML='<div class="wr">'+esc(e.message||e)+'</div>'}finally{b.disabled=false}};
+$('#s1ab').onclick=()=>{const t=$('#s1a').value.trim();if(!t)return;RS.topics.unshift({t,sc:99,why:['added by you'],cov:!!dup({kw:t,topic:t}),on:true});$('#s1a').value='';s1Show()};
+$('#s1a').onkeydown=e=>{if(e.key=='Enter')$('#s1ab').click()};$('#s2b').onclick=s2Run;$('#s3b').onclick=s3Build;
+// ===== BRIEFS: rule-based draft (always) + "Headings & meta" via claude.ai (per idea) =====
+const RSTOP=new Set('في من على عن مع او أو و ما هو هي هل كيف متى لماذا كم اثناء خلال قبل بعد عند الى الي إلى كل ان أن هذا هذه the a an of for in to and or is are how what why when your with during before after vs best'.split(' '));
+const stemA=w=>{w=arN(w).trim();if(!w)return'';if(/[a-z]/.test(w))return w.replace(/(ies)$/,'y').replace(/(es|s)$/,'');w=w.replace(/^(و|ف)(?=...)/,'');w=w.replace(/^(بال|كال|فال|وال|لل|ال)(?=..)/,'');w=w.replace(/^(ب|ل|ك)(?=...)/,'');w=w.replace(/(ات|ون|ين)$/,'');return w};
+const stems=s=>new Set(arN(s).split(/\s+/).filter(w=>w.length>1&&!RSTOP.has(w)&&!/^\d+$/.test(w)).map(stemA).filter(w=>w.length>1&&!RSTOP.has(w)));
+let gwC={k:'',s:new Set()};
+function genWords(c){const O=(c.old||[]),k=S.cur+'|'+O.length+'|'+c.i.length;if(gwC.k==k)return gwC.s;const T=[...O.map(o=>o.t),...c.i.map(i=>i.topic)],f={};T.forEach(t=>stems(t).forEach(w=>f[w]=(f[w]||0)+1));
+ gwC={k,s:new Set(Object.keys(f).filter(w=>T.length>=5&&f[w]/T.length>.3))};return gwC.s}
+const QW=/^(هل|كيف|ما هو|ما هي|ماذا|ما|متى|كم|لماذا|اين|أين|how to|how much|how|what is|what are|what|why|when|where|can|is|are|does|do|which|should)\s+/i;
+const coreOf=k=>String(k||'').trim().replace(/[?؟]+\s*$/,'').replace(QW,'').replace(/^(سعر|اسعار|أسعار|تكلفة|تكلفه|price of|cost of)\s+/i,'').trim()||String(k||'').trim();
+function relTo(h,topic){if(/الاسئله|اسئله شائعه|faq|frequently|questions/i.test(arN(h)))return true;const c=cur(),G=genWords(c);let T=stems(topic);const T2=new Set([...T].filter(w=>!G.has(w)));if(T2.size)T=T2;const H=stems(h);for(const w of H)if(T.has(w))return true;return false}
+const CAT=[[/^(ما هو|ما هي|تعريف|what is|what are|definition)/i,0],[/^(حكم|الحكم)|ruling/i,0.5],[/(انواع|نوع|types?\b)/i,1],[/(فوائد|مميزات|مزايا|benefits|advantages|pros)/i,2],[/(خطوات|مراحل|كيف|طريقه|how to|steps|stages|process)/i,3],[/(شروط|متى|من يحتاج|candidate|who needs|when)/i,4],[/(سعر|اسعار|تكلفه|تكاليف|بكام|price|cost)/i,5],[/(مخاطر|اضرار|عيوب|مضاعفات|risks|side effects|cons|disadvantages)/i,6],[/(بعد|نصائح|العنايه|aftercare|tips|recovery|care)/i,7],[/(الاسئله|اسئله|faq|questions)/i,9]];
+const catOf=h=>{const n=arN(h);for(const [re,k] of CAT)if(re.test(n))return k;return 4.5};
+const BRL={ar:{h1:'العنوان الرئيسي (H1)',out:'هيكل المقال (H2 و H3)',mt:'خيارات عنوان الميتا (Meta title)',md:'خيارات وصف الميتا (Meta description)',faq:'الأسئلة الشائعة',links:'الروابط الداخلية',notes:'ملاحظات للكاتب',cta:'الدعوة لاتخاذ إجراء (CTA)',none:'لا توجد مقالات قديمة مرتبطة',wc:'عدد الكلمات المقترح',faqH:'الأسئلة الشائعة حول '},en:{h1:'H1',out:'Outline (H2 and H3)',mt:'Meta title options',md:'Meta description options',faq:'FAQ',links:'Internal links',notes:'Notes for the writer',cta:'CTA',none:'No related old posts',wc:'Suggested length',faqH:'FAQ about '}};
+const cap1=s=>s?s.charAt(0).toUpperCase()+s.slice(1):s;
+function fitLen(t,max){t=String(t).replace(/\s+/g,' ').trim();if(t.length<=max)return t;if(t.includes(' | ')){const a=t.split(' | ')[0];if(a.length<=max)return a;t=a}const w=t.split(' ');while(w.length>2&&w.join(' ').length>max)w.pop();return w.join(' ').replace(/[،,:|–-]+$/,'')}
+function oldLinks(c,x,n){const K=stems(x.kw+' '+(x.cluster||'')),G=genWords(c);return apOld(c).O.map(o=>{const S0=stems(o.t);let sc=0;S0.forEach(w=>{if(K.has(w))sc+=G.has(w)?.3:1});return{o,sc}}).filter(z=>z.sc>=1&&rsKey(z.o.t)!=rsKey(x.topic)).sort((a,b)=>(!!b.o.u-!!a.o.u)||b.sc-a.sc).slice(0,n).map(z=>({anchor:z.o.t,url:z.o.u||''}))}
+function normOb(o){if(!o)return null;const n={...o};if(!n.mt&&n.titles)n.mt=n.titles.slice(0,3);if(!n.md&&n.meta)n.md=[n.meta];n.faqs=(n.faqs||[]).map(f=>typeof f=='string'?{q:f,a:''}:f).filter(f=>f&&f.q);
+ n.links=(n.links||[]).map(l=>typeof l=='string'?(()=>{const p=l.split(' → ');return{anchor:p[0],url:p[1]||''}})():l).filter(l=>l&&l.anchor&&!/لا توجد مقالات|No related old posts/.test(l.anchor));n.headings=(n.headings||[]).map(h=>typeof h=='string'?{h2:h,h3:[]}:{h2:h.h2,h3:h.h3||[]});return n}
+const SMALLW=new Set('a an and or of for in on to the with vs at by from'.split(' '));
+const tCase=s=>String(s).split(' ').map((w,i)=>i&&SMALLW.has(w.toLowerCase())?w.toLowerCase():cap1(w)).join(' ');
+const ASP={ar:{0:'التعريف',0.5:'الحكم',1:'الأنواع',2:'الفوائد',3:'الخطوات',4:'التوقيت المناسب',5:'الأسعار',6:'المخاطر',7:'النصائح'},en:{0:'what it is',0.5:'the rules',1:'the types',2:'the benefits',3:'the steps',4:'the right timing',5:'the prices',6:'the risks',7:'expert tips'}};
+function draftBrief(x){const c=cur(),p=c.p||{},ar=xAr(x),L=ar?BRL.ar:BRL.en,yr=String(new Date().getFullYear()),kw0=String(x.kw||x.topic||'').trim(),core=coreOf(kw0),isQ=QW.test(kw0),brand=S.cur,mk0=((p.m||'').split(/[,،]/)[0]||'').trim(),m=mk0&&isAr(mk0)==ar?mk0:'',o=normOb(x.ob)||{},keep=o.picked||o.src=='claude';
+ const short=core.split(/\s+/).length<=3,C=ar?core:tCase(core),Q=isQ?(ar?kw0.replace(/[?؟]*$/,'؟'):cap1(kw0.replace(/\?*$/,'?'))):'';
+ let S0=(o.headings||[]).filter(h=>h.h2&&(keep||relTo(h.h2,kw0+' '+(x.cluster||''))))
+  .filter(h=>!/^(الخاتمه|خاتمه|الخلاصه|مقدمه|conclusion|summary|introduction)$/i.test(arN(h.h2).trim())&&catOf(h.h2)!=9);
+ if(!keep)S0=S0.map((h,i)=>({...h,_k:catOf(h.h2),_i:i})).sort((a,b)=>a._k-b._k||a._i-b._i).map(({_k,_i,...h})=>h);
+ let H=S0.slice(0,8);
+ if(H.length<4){const w=(a,b)=>short?a:b;
+  const T=ar?{info:[isQ?`${Q} الإجابة المختصرة`:`ما هو ${core}؟`,w(`فوائد ${core} وأهميته`,'الفوائد والأهمية'),w(`خطوات ${core} الصحيحة`,'الخطوات الصحيحة خطوة بخطوة'),'أخطاء شائعة يجب تجنبها',w(`نصائح مهمة حول ${core}`,'نصائح عملية من المتخصصين'),'متى تحتاج إلى استشارة متخصص؟'],
+    comm:[w(`كيف تختار ${core} المناسب؟`,'كيف تختار الأنسب لك؟'),w(`مقارنة بين أهم خيارات ${core}`,'مقارنة بين أهم الخيارات'),'مميزات وعيوب كل خيار',w(`أسعار ${core}${m?' في '+m:''}`,'الأسعار المتوقعة'),'نصائح قبل اتخاذ القرار'],
+    trans:[`سعر ${core}${m?' في '+m:''} ${yr}`,'العوامل المؤثرة على السعر','ماذا يشمل السعر؟','كيف تحصل على أفضل قيمة؟',`لماذا تختار ${brand}؟`],nav:[`لماذا ${brand}؟`,w(`خدمات ${brand} في ${core}`,`خدمات ${brand}`),'تجارب العملاء','كيف تحجز موعدك؟']}
+   :{info:[isQ?`${Q} The Short Answer`:`What Is ${C}?`,w(`Benefits of ${C}`,'Benefits and Why It Matters'),w(`${C}: Step by Step`,'Step-by-Step Guide'),'Common Mistakes to Avoid',w(`Expert Tips for ${C}`,'Expert Tips'),'When to See a Specialist'],
+    comm:[w(`How to Choose the Right ${C}`,'How to Choose the Right Option'),w(`${C} Options Compared`,'Top Options Compared'),'Pros and Cons of Each Option',w(`${C} Prices${m?' in '+m:''}`,'Expected Prices'),'Tips Before You Decide'],
+    trans:[`${C} Price${m?' in '+m:''} (${yr})`,'What Affects the Price?','What Is Included in the Price?','How to Get the Best Value',`Why Choose ${brand}?`],nav:[`Why ${brand}?`,w(`${brand} ${C} Services`,`${brand} Services`),'Patient Reviews','How to Book']};
+  const tp=(T[x.intent]||T.info).filter(t=>!H.some(h=>nsim(h.h2,t)>=.5));
+  if(tp.length&&(catOf(tp[0])<=0.5||x.intent!='info'||isQ))H.unshift({h2:tp.shift(),h3:[]});
+  H=H.concat(tp.map(h2=>({h2,h3:[]}))).slice(0,8)}
+ let F=(o.faqs||[]).filter(f=>keep||relTo(f.q,kw0));if(!F.length&&isQ)F=[{q:Q,a:''}];
+ H.push({h2:ar?(short?L.faqH+core:'الأسئلة الشائعة'):(short?L.faqH+core:'Frequently Asked Questions'),h3:F.slice(0,5).map(f=>f.q)});
+ const A=[...new Set(H.slice(0,-1).map(h=>catOf(h.h2)).filter(k=>k!=4.5&&k!=9))].map(k=>(ar?ASP.ar:ASP.en)[k]).filter(Boolean).slice(0,4);if(A.length<2)A.push(...(ar?['الخطوات','النصائح']:['the steps','expert tips']).filter(a=>!A.includes(a)));
+ const jA=n=>{const a=A.slice(0,n);return ar?a[0]+a.slice(1).map(s=>' و'+s).join(''):(a.length>1?a.slice(0,-1).join(', ')+' and '+a[a.length-1]:a[0])};
+ const MT=ar?{info:[`${core}: دليل شامل ${yr}`,isQ?Q:`${core} | كل ما تحتاج معرفته`,`دليلك إلى ${core} | ${brand}`],comm:[`أفضل ${core}${m?' في '+m:''} ${yr}`,`${core}: مقارنة شاملة وكيف تختار`,`${core} | ${brand}`],trans:[`سعر ${core}${m?' في '+m:''} ${yr}`,`تكلفة ${core}: ما الذي يحدد السعر؟`,`${core} بأفضل سعر | ${brand}`],nav:[`${core} | ${brand}`,`${brand}: ${core}`,`احجز ${core} مع ${brand}`]}
+  :{info:[`${C}: The Complete ${yr} Guide`,isQ?Q:`${C}: Everything You Need to Know`,`Your Guide to ${C} | ${brand}`],comm:[`Best ${C}${m?' in '+m:''} (${yr})`,`${C}: Compare Options and Choose Right`,`${C} | ${brand}`],trans:[`${C} Price${m?' in '+m:''} (${yr})`,`${C} Cost: What Affects the Price?`,`Affordable ${C} | ${brand}`],nav:[`${C} | ${brand}`,`${brand}: ${C}`,`Book ${C} with ${brand}`]};
+ const CS=ar?{awareness:'اقرأ الدليل الآن.',consideration:'قارن واختر الأنسب لك.',decision:'احجز استشارتك اليوم.'}:{awareness:'Read the full guide.',consideration:'Compare and choose what suits you.',decision:'Book your consultation today.'},cs=CS[x.stage||stage(x.intent)]||CS.awareness;
+ const D=ar?[n=>`تعرف على ${core}: ${jA(n)} في دليل واضح من ${brand}. ${cs}`,n=>`${isQ?Q:'هل تبحث عن '+core+'؟'} اكتشف ${jA(n)} مع نصائح عملية من خبراء ${brand}. ${cs}`,n=>`دليلك الكامل حول ${core}${m?' في '+m:''}: ${jA(n)} وإجابات أهم الأسئلة. ${cs}`]
+  :[n=>`Learn about ${core}: ${jA(n)}, explained clearly by ${brand}. ${cs}`,n=>`${isQ?Q:'Looking for '+core+'?'} Discover ${jA(n)}, with practical tips from ${brand} experts. ${cs}`,n=>`Your complete guide to ${core}${m?' in '+m:''}: ${jA(n)}, plus answers to common questions. ${cs}`];
+ const md=D.map(f=>{for(let n=A.length;n>=1;n--){const t=f(n).replace(/\s+/g,' ').trim();if(t.length<=155)return t}return fitLen(f(1).replace(/\s+/g,' '),155)});
+ const ol=(o.links||[]).filter(l=>keep||relTo(l.anchor,kw0)),links=ol.length?ol:oldLinks(c,x,3);
+ return{src:'auto',h1:o.h1||x.topic,headings:H,mt:(MT[x.intent]||MT.info).map(t=>fitLen(t,60)),md,faqs:F,links,notes:o.notes||[],cta:o.cta||(ar?CTAA:CTA)[x.stage||stage(x.intent)],pickT:o.pickT||0,pickD:o.pickD||0}}
+function briefOf(x){const o=normOb(x.ob);if(o&&o.src=='claude')return{pickT:0,pickD:0,...o};return draftBrief(x)}
+const cnt=(s,lo,hi)=>{const n=String(s).length;return`<span class="tag" style="${n<lo||n>hi?'color:var(--wr)':''}" title="${lo}–${hi} characters is ideal">${n}</span>`};
+function briefHtml(x){const b=briefOf(x),ar=xAr(x),L=ar?BRL.ar:BRL.en,id=esc(x.id);
+ const src=b.src=='claude'?`<span class="tag">✨ ${ar?'كتبه Claude':'Written by Claude'}${b.at?' · '+new Date(b.at).toLocaleDateString():''}</span>`:`<span class="mu">${ar?'مسودة تلقائية. للحصول على نسخة احترافية اضغط':'Automatic draft. For a polished version click'} “📝 Headings & meta”.</span>`;
+ const radio=(arr,k,lo,hi,pick)=>arr.map((t,i)=>`<label style="display:block;margin:3px 0"><input type="radio" name="${k}-${id}" data-bpick="${k}" data-bid="${id}" value="${i}" ${i==pick?'checked':''}> ${esc(t)} ${cnt(t,lo,hi)}</label>`).join('');
+ return`<div class="card" dir="auto" style="margin-top:8px"><div class="row" style="justify-content:space-between"><b>${ar?'ملخص المقال':'Content brief'}</b>${src}</div>
+ <p><b>${L.h1}:</b> ${esc(b.h1)}</p><p style="margin-bottom:2px"><b>${L.out}:</b></p><ol>${b.headings.map(h=>`<li><b>H2</b> ${esc(h.h2)}${(h.h3||[]).length?'<ul>'+h.h3.map(t=>`<li><span class="mu">H3</span> ${esc(t)}</li>`).join('')+'</ul>':''}</li>`).join('')}</ol>
+ <p style="margin-bottom:2px"><b>${L.mt}:</b> <span class="mu">50–60</span></p>${radio(b.mt||[],'t',50,60,b.pickT)}
+ <p style="margin:8px 0 2px"><b>${L.md}:</b> <span class="mu">120–155</span></p>${radio(b.md||[],'d',120,155,b.pickD)}
+ ${b.faqs.length&&b.faqs.some(f=>f.a)?`<p style="margin:8px 0 2px"><b>${L.faq}:</b></p><ul>${b.faqs.map(f=>`<li><b>${esc(f.q)}</b>${f.a?' '+esc(f.a):''}</li>`).join('')}</ul>`:''}
+ <p><b>${L.links}:</b> ${b.links.length?b.links.map(l=>l.url?`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.anchor)}</a>`:esc(l.anchor)).join(' · '):L.none}</p>
+ ${b.wc?`<p><b>${L.wc}:</b> ${esc(b.wc)}</p>`:''}${b.notes.length?`<p style="margin-bottom:2px"><b>${L.notes}:</b></p><ul>${b.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>`:''}
+ <p><b>${L.cta}:</b> ${esc(b.cta||'')}</p><div class="row noprint"><button data-bcopy="${id}">${ar?'نسخ الملخص':'Copy brief'}</button></div></div>`}
+function boHtml(x){return briefHtml(x)}
+function findIdea(id){const c=cur();return plan.find(y=>y.id==id)||c.i.find(y=>y.id==id)}
+function setOb(id,ob){const c=cur(),i=c.i.find(y=>y.id==id),p=plan.find(y=>y.id==id);if(i)i.ob=ob;if(p)p.ob=ob;save();if(p)planSave();if(!$('#b').hidden)show()}
+function briefText(x){const b=briefOf(x),ar=xAr(x),L=ar?BRL.ar:BRL.en;return[`${L.h1}: ${b.h1}`,`${ar?'الكلمة المفتاحية':'Focus keyword'}: ${x.kw}`,`${ar?'عنوان الميتا':'Meta title'}: ${(b.mt||[])[b.pickT]||''}`,`${ar?'وصف الميتا':'Meta description'}: ${(b.md||[])[b.pickD]||''}`,'',...b.headings.flatMap(h=>['H2: '+h.h2,...(h.h3||[]).map(t=>'   H3: '+t)]),'',
+ ...(b.faqs.some(f=>f.a)?[L.faq+':',...b.faqs.map(f=>'- '+f.q+(f.a?' '+f.a:''))]:[]),b.links.length?L.links+': '+b.links.map(l=>l.anchor+(l.url?' ('+l.url+')':'')).join(' · '):'',...(b.notes.length?['',L.notes+':',...b.notes.map(n=>'- '+n)]:[]),'',`${L.cta}: ${b.cta||''}`].join('\n').replace(/\n{3,}/g,'\n\n')}
+function bindBrief(root){root.querySelectorAll('[data-bpick]').forEach(e=>e.onchange=()=>{const x=findIdea(e.dataset.bid);if(!x)return;const ob={...(normOb(x.ob)||{})};ob[e.dataset.bpick=='t'?'pickT':'pickD']=+e.value;setOb(x.id,ob);setSv('Meta choice saved')});
+ root.querySelectorAll('[data-bcopy]').forEach(b=>b.onclick=()=>{const x=findIdea(b.dataset.bcopy);if(!x)return;const t=briefText(x);navigator.clipboard.writeText(t).then(()=>setSv('Brief copied')).catch(()=>prompt('Copy:',t))});
+ root.querySelectorAll('[data-br]').forEach(b=>b.onclick=e=>{e.preventDefault();openBrief(b.dataset.br)})}
+async function briefPrompt(x){const c=cur(),p=c.p||{},ar=xAr(x),yr=new Date().getFullYear();let sd=null;for(const t of [x.cluster,x.kw,coreOf(x.kw)])if(!sd&&t)try{sd=await rsLoadSaved(t)}catch(e){}
+ let comps=[];try{comps=(await cpRows()).map(z=>z.name+(z.website?' ('+z.website+')':''))}catch(e){}
+ const K=stems(x.kw+' '+x.topic),posts=apOld(c).O.map(o=>{let sc=0;stems(o.t).forEach(w=>{if(K.has(w))sc++});return{o,sc}}).sort((a,b)=>b.sc-a.sc||(!!b.o.u-!!a.o.u)).slice(0,40).map(z=>`- ${z.o.t}${z.o.u?' — '+z.o.u:' — (no URL)'}`);
+ const d=draftBrief(x),serp=sd&&!sd.err?[`Analyzed: ${new Date(sd.at).toLocaleDateString()}`,'Top results: '+sd.results.slice(0,10).map((r,i)=>`${i+1}. ${r.title} (${r.dom}, ${r.type})`).join(' | '),'Winning headings (how many of the top pages use it): '+sd.heads.slice(0,20).map(h=>`${h.h} (${h.n}/${sd.pages.length})`).join(' | '),'Questions people search: '+sd.qs.map(q=>q.q).join(' | '),'Notes: '+sd.notes.join(' | ')].join('\n'):'No SERP analysis saved for this topic. Use your own knowledge of what ranks for this keyword'+(p.m?' in '+p.m:'')+'.';
+ return`You are a senior SEO content strategist and ${ar?'Arabic':'English'} copywriter. Write an SEO content brief for ONE blog post. Use the data below. Do not invent statistics, prices or medical/legal claims.
+
+CLIENT: ${S.cur}. Website: ${p.site||'n/a'}. Industry: ${p.ind||'n/a'}. Target market: ${p.m||'n/a'}. Audience: ${p.a||'n/a'}. Brand voice: ${p.voice||'n/a'}. Products/services: ${(p.prod||'n/a').replace(/\n/g,', ')}. Competitors: ${comps.join(', ')||'n/a'}.
+
+POST
+- Working title: ${x.topic}
+- Focus keyword: ${x.kw}
+- Search intent: ${INT[x.intent]||x.intent}
+- Format: ${x.format}
+- Language: ${ar?'Arabic (Modern Standard Arabic that reads naturally for '+(p.m||'Arab')+' readers)':'English'}
+
+SERP EVIDENCE
+${serp}
+
+CLIENT'S EXISTING POSTS (internal links may ONLY come from this list; do not repeat these topics)
+${posts.join('\n')||'none'}
+
+RULES
+- Write every value in ${ar?'Arabic':'English'}.
+- Stay strictly on the topic "${x.kw}". Ignore SERP headings that are about other topics.
+- H1: include the focus keyword naturally; it may differ from the working title.
+- Outline: 6–10 H2s in a logical reading order, each with 0–4 H3s. Cover the questions people search. Specific headings, not generic ones like "Introduction" or "Conclusion". End with an FAQ H2.
+- meta_titles: exactly 3, each 50–60 characters, focus keyword near the start, three different angles. Add " | ${S.cur}" only if it still fits in 60 characters.
+- meta_descriptions: exactly 3, each 120–155 characters, include the focus keyword, a clear benefit and a call to action.
+- faq: 4–6 questions with 1–2 sentence answers.
+- internal_links: 2–4 items from the existing posts list only, with natural anchor text and the exact URL. If none fit, return [].
+- writer_notes: 3–5 short practical notes based on the SERP evidence (length, tables, what to include or avoid).
+
+OUTPUT: return ONLY one JSON code block, nothing before or after it, in exactly this shape:
+\`\`\`json
+{"focus_keyword":"${x.kw.replace(/"/g,'')}","h1":"","outline":[{"h2":"","h3":[""]}],"meta_titles":["","",""],"meta_descriptions":["","",""],"faq":[{"q":"","a":""}],"internal_links":[{"anchor":"","url":""}],"writer_notes":[""],"word_count":"1800–2200"}
+\`\`\``}
+function parseBrief(t,x){let s=String(t||'').replace(/```(?:json)?/gi,'').replace(/[“”]/g,'"');const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a<0||b<a)throw new Error('No answer found. Copy Claude’s whole reply (use the copy button under it) and paste it here.');
+ let j;try{j=JSON.parse(s.slice(a,b+1))}catch(e){throw new Error('The answer is cut off or changed. Copy Claude’s whole reply again, using the copy button under the answer.')}
+ const arr=v=>Array.isArray(v)?v:[],str=v=>String(v??'').trim(),O=arr(j.outline).map(h=>({h2:str(h&&h.h2),h3:arr(h&&h.h3).map(str).filter(Boolean)})).filter(h=>h.h2),MT=arr(j.meta_titles).map(str).filter(Boolean),MD=arr(j.meta_descriptions).map(str).filter(Boolean);
+ const miss=[];if(O.length<3)miss.push('outline');if(!MT.length)miss.push('meta titles');if(!MD.length)miss.push('meta descriptions');if(miss.length)throw new Error('The answer is missing: '+miss.join(', ')+'. Ask Claude to answer again in the requested format.');
+ const warn=[];if(j.focus_keyword&&x&&nsim(str(j.focus_keyword),x.kw)<.5)warn.push('This answer seems to be for “'+str(j.focus_keyword)+'”, not “'+x.kw+'”.');if(x&&xAr(x)!=isAr(O.map(h=>h.h2).join(' ')))warn.push('The headings are not in the idea’s language.');
+ return{ob:{src:'claude',at:new Date().toISOString(),h1:str(j.h1)||x.topic,headings:O,mt:MT.slice(0,3),md:MD.slice(0,3),faqs:arr(j.faq).map(f=>({q:str(f&&f.q),a:str(f&&f.a)})).filter(f=>f.q),links:arr(j.internal_links).map(l=>({anchor:str(l&&l.anchor),url:str(l&&l.url)})).filter(l=>l.anchor),notes:arr(j.writer_notes).map(str).filter(Boolean),wc:str(j.word_count),cta:(normOb(x.ob)||{}).cta||'',pickT:0,pickD:0},warn}}
+async function openBrief(id){const x=findIdea(id);if(!x)return;const m=$('#bm');m.hidden=false;$('#bmt').textContent=x.topic;$('#bmt').dir='auto';$('#bme').innerHTML='';$('#bma').value='';$('#bmr').value='';$('#bmr').hidden=true;
+ $('#bmp').innerHTML=briefHtml(x);bindBrief($('#bmp'));m.dataset.id=id;
+ $('#bmc').onclick=async()=>{const t=await briefPrompt(x);$('#bmr').value=t;try{await navigator.clipboard.writeText(t);$('#bme').innerHTML='<span class="mu">Request copied. Open claude.ai, paste it (Ctrl + V) and send.</span>'}catch(e){$('#bmr').hidden=false;$('#bmr').select();$('#bme').innerHTML='<span class="mu">Select the text in the box, copy it, and paste it into claude.ai.</span>'}};
+ $('#bms').onclick=()=>{try{const r=parseBrief($('#bma').value,x);if(r.warn.length&&!confirm(r.warn.join('\n')+'\n\nSave it anyway?'))return;setOb(x.id,r.ob);const y=findIdea(x.id)||x;$('#bmp').innerHTML=briefHtml(y);bindBrief($('#bmp'));$('#bma').value='';$('#bme').innerHTML='<span class="tag">✅ Saved. The whole team can see it.</span>';if(typeof tbl=='function')tbl()}catch(e){$('#bme').innerHTML='<span class="wr">'+esc(e.message)+'</span>'}}}
+$('#bmx').onclick=()=>{$('#bm').hidden=true};$('#bm').onclick=e=>{if(e.target.id=='bm')$('#bm').hidden=true};document.addEventListener('keydown',e=>{if(e.key=='Escape'&&!$('#bm').hidden)$('#bm').hidden=true});
+// ===== KEYWORD RESEARCH: seeds -> Google suggestions -> topic groups -> Google SERP check -> ideas / plan =====
+const KSYN={...NSYN,'مضر':'مخاطر','مضره':'مخاطر','خطير':'مخاطر','خطيره':'مخاطر','خطر':'مخاطر','harmful':'مخاطر','dangerous':'مخاطر','safe':'مخاطر','امن':'مخاطر','امنه':'مخاطر','كام':'سعر','بكم':'سعر','ثمن':'سعر','عروض':'سعر','عرض':'سعر','خصم':'سعر','افضل':'افضل','احسن':'افضل','best':'افضل','top':'افضل','وقت':'مده','مده':'مده','يستغرق':'مده','long':'مده','تدوم':'مده','يدوم':'مده'};
+const KSTOP=new Set([...RSTOP].filter(w=>!['best','vs'].includes(w)).concat('عن ل ب في من ال كيفيه طريقه يتم تتم يكون تكون عمل how is are does do can مصر القاهره الجيزه الاسكندريه السعوديه الرياض جده الامارات دبي ابوظبي الكويت قطر egypt cairo giza alexandria saudi riyadh jeddah uae dubai'.split(' ')));
+const kKey=s=>new Set(arN(s).split(/\s+/).filter(Boolean).map(w=>KSYN[w]||w).filter(w=>!KSTOP.has(w)&&!/^\d+$/.test(w)).map(w=>KSYN[stemA(w)]||stemA(w)).filter(w=>w.length>1));
+const kJac=(A,B)=>{let n=0;A.forEach(w=>{if(B.has(w))n++});return n/(A.size+B.size-n||1)};
+const kCls=(s,P)=>P.buy.test(s)?'trans':P.cmp.test(s)?'comm':'info';
+const GDOM={eg:'www.google.com.eg',sa:'www.google.com.sa',ae:'www.google.ae',us:'www.google.com',gb:'www.google.co.uk'};
+const STRONG=/(wikipedia|mayoclinic|webmd|healthline|clevelandclinic|nhs\.uk|medlineplus|altibbi|webteb|sehatok|mawdoo3|kingabdullah|\.gov|\.edu|who\.int|aljazeera|youm7|masrawy|almasryalyoum|amazon|noon|jumia|apple\.com|microsoft\.com)/i;
+const WEAK=/(reddit|quora|facebook|instagram|tiktok|pinterest|linkedin|twitter|x\.com|vezeeta|whatclinic|bookimed|tebcan|doctoruna|yelp|tripadvisor|olx|dubizzle|forum|منتدى|blogspot|wordpress\.com|medium\.com)/i;
+function gParse(t,gdom){if(!t||t.length<3000)return null;const out=[],seen=new Set(),re=/^#{1,3} \[(.+?) !\[Image \d+\]\([^)]*\)\s*(.*?)\]\((https:\/\/www\.google\.[a-z.]+\/goto[^)]*)\)/gm;let m;
+ while((m=re.exec(t))&&out.length<12){const meta=m[2].trim(),video=/^YouTube·|YouTube$|·YouTube/.test(meta)||/youtube/i.test(meta.split('·')[0]);const u=(meta.match(/https?:\/\/[^\s›]+/)||[])[0]||'';const dom=video?'youtube.com':apHost(u);const title=apClean(m[1]);if(!dom)continue;const k=(dom+'|'+title).toLowerCase();if(seen.has(k))continue;seen.add(k);out.push({title,dom,url:u,video})}
+ if(!out.length)return null;
+ const qs=[];const pi=t.search(/أسئلة أخرى|يسأل الآخرون|يسأل الناس|People also ask|Others want to know/i);if(pi>=0){t.slice(pi,pi+9000).split('\n').map(l=>l.trim()).forEach(l=>{if(qs.length<8&&/[?؟]$/.test(l)&&l.length<130&&!/^[#\[*!(]/.test(l)&&!qs.includes(l))qs.push(l)})}
+ const rel=[],rr=/\[([^\]\[]{4,80})\]\(https:\/\/www\.google\.[a-z.]+\/search\?(?:[^)]*?&)?q=([^&)]+)[^)]*\)/g;let r;while((r=rr.exec(t))&&rel.length<10){const label=apClean(r[1]);if(/^(صور|فيديوهات|أخبار|كتب|الويب|تسوّق|المزيد|images|videos|news|books|web|shopping|more|maps|all|الكل|الأدوات|tools|فيديوهات قصيرة|short videos)$/i.test(label))continue;const qv=decodeURIComponent(r[2].replace(/\+/g,' '));if(label.length>3&&!rel.includes(qv))rel.push(qv)}
+ return{results:out,qs,rel,ai:/وضع AI|نبذة باستخدام الذكاء الاصطناعي|AI Overview|AI Mode/.test(t),src:'google'}}
+async function gSerp(q,hl,gl){const g=GDOM[gl]||GDOM.eg,t=await apRead('https://'+g+'/search?q='+encodeURIComponent(q)+'&hl='+hl+'&gl='+gl);let p=gParse(t,g);if(p)return p;
+ const kl=hl=='ar'?'xa-ar':(gl=='us'?'us-en':gl=='gb'?'uk-en':'xa-en'),R=apSerp(await apRead('https://html.duckduckgo.com/html/?kl='+kl+'&q='+encodeURIComponent(q)));if(!R.length)return null;
+ return{results:R.map(r=>({title:r.title,dom:r.dom,url:r.url,video:/youtube/.test(r.dom)})),qs:[],rel:[],ai:false,src:'duckduckgo'}}
+function kDiff(s,own,comps){const org=s.results.filter(r=>!r.video).slice(0,10),top5=org.slice(0,5),st=org.filter(r=>STRONG.test(r.dom)).length,st5=top5.filter(r=>STRONG.test(r.dom)).length,wk=org.filter(r=>WEAK.test(r.dom)).length;
+ const lvl=(wk>=3||st==0)&&st5<=1?'easy':(st5>=3||st>=5)?'hard':'medium',ty={};org.forEach(r=>{const t=PTYPE(r);ty[t]=(ty[t]||0)+1});const top=(Object.entries(ty).sort((a,b)=>b[1]-a[1])[0]||['article'])[0];
+ const oi=own?org.findIndex(r=>r.dom.endsWith(own)):-1,cr=[...new Set(org.filter(r=>comps.some(c=>c.h&&r.dom.endsWith(c.h))).map(r=>comps.find(c=>r.dom.endsWith(c.h)).n))];
+ const notes=[`${lvl=='easy'?'Easy':lvl=='hard'?'Hard':'Medium'}: ${st} big authority sites and ${wk} weak pages (forums, directories, social) in the top ${org.length}`,`Most top results are ${PTPL[top]||top}`];
+ if(s.results.some(r=>r.video))notes.push('Google shows videos for this search');if(s.ai)notes.push('Google shows an AI answer at the top');if(oi>=0)notes.push(`Your site already ranks #${oi+1}`);if(cr.length)notes.push('Competitors ranking: '+cr.join(', '));if(s.src!='google')notes.push('Checked with DuckDuckGo (Google blocked this check)');
+ return{lvl,type:top,own:oi,comps:cr,notes}}
+let KR=null;
+function krSeeds(c){const p=c.p||{},m=((p.m||'').split(/[,،]/)[0]||'').trim();let T=[];(p.prod||'').split(/[\n,،;]+/).map(x=>x.trim()).filter(x=>x.length>2).forEach(x=>T.push(x));
+ try{seeds(c,m,'BOTH').forEach(x=>{if(!T.some(y=>nsim(x,y)>=.5))T.push(x)})}catch(e){}return T.slice(0,6)}
+function krProg(st){$('#krp').innerHTML='<div class="card"><b>Working… keep this tab open</b>'+st.map(s=>`<div>${s.d?'✅':s.on?'⏳':'▫️'} ${s.t}${s.n?' <span class="mu">· '+esc(s.n)+'</span>':''}</div>`).join('')+'</div>'}
+async function krRun(){const c=cur(),p=c.p||{},seedsIn=$('#krs').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,10);if(!seedsIn.length)return alert('Add at least one seed keyword.');
+ const gl=$('#krm').value,deep=$('#krd').value=='2',NC=+$('#krn').value,own=apHost(p.site||'');let comps=[];try{comps=(await cpRows()).filter(x=>x.website).map(x=>({n:x.name,h:apHost(x.website),w:x.website}))}catch(e){}
+ const st=[{t:'Expand seeds with Google suggestions'},{t:'Add topics from competitors’ articles'},{t:'Group keywords into topics'},{t:'Remove topics you already have'},{t:'Check Google results for the best new topics'},{t:'Score and rank'}];const go=(i,n)=>{st[i].on=1;if(n!=null)st[i].n=n;krProg(st)},ok=(i,n)=>{st[i].on=0;st[i].d=1;if(n!=null)st[i].n=n;krProg(st)};
+ $('#kro').innerHTML='';go(0);const M=new Map();let calls=0,fails=0;
+ const addK=(s,seed,w)=>{s=String(s).replace(/\s+/g,' ').trim();if(s.length<4||s.split(' ').length>9||/youtube|pdf|mp3|wikipedia|ويكيبيديا|تحميل|download/i.test(s))return;const S0=kKey(seed),K=kKey(s);if(![...S0].some(x=>K.has(x)))return;const k=arN(s).replace(/\s+/g,' ').trim();const e=M.get(k)||{s,hits:0,seeds:new Set()};e.hits+=w;e.seeds.add(seed);M.set(k,e)};
+ for(const seed of seedsIn){const hl=isAr(seed)?'ar':'en',P=MKP[hl],pre=hl=='ar'?['كيف','هل','ما هو','كم','متى','لماذا','افضل','سعر','مقارنة','اضرار','فوائد','عروض','تجربتي مع']:['how','what is','why','can','is','best','top','price of','cost of','vs'],suf=hl=='ar'?['بكام','في مصر','للاطفال','بالليزر','في البيت']:['price','cost','near me','reviews','vs','benefits','side effects'];
+  const Q=[seed,...pre.map(x=>x+' '+seed),...suf.map(x=>seed+' '+x)];if(deep)(hl=='ar'?'ابتثجحخدرزسشصطعغفقكلمنهوي'.split(''):'abcdefghijklmnoprstuvw'.split('')).forEach(ch=>Q.push(seed+' '+ch));
+  for(let i=0;i<Q.length;i+=5){await Promise.all(Q.slice(i,i+5).map(async q=>{calls++;try{(await gSuggest(q,hl,gl)).forEach((x,j)=>addK(x.s,seed,j<3?2:1))}catch(e){fails++}}));go(0,M.size+' keywords from '+calls+' searches')}}
+ ok(0,M.size+' keywords from '+calls+' Google searches'+(fails?' ('+fails+' failed)':''));
+ go(1);if($('#krc').checked&&comps.length){let n=0;for(const x of comps.slice(0,3)){const s=await apComp(x.w);(s||[]).forEach(t=>{const sd=seedsIn.find(sd=>[...kKey(sd)].some(w=>kKey(t).has(w)));if(sd){const k=arN(t).trim(),e=M.get(k)||{s:t,hits:0,seeds:new Set()};e.hits+=1;e.seeds.add(sd);e.comp=(e.comp||new Set()).add(x.n);M.set(k,e);n++}});go(1,n+' topics from '+x.n)}ok(1,n+' competitor topics added')}else ok(1,comps.length?'skipped':'no competitors with websites');
+ if(!M.size){$('#krp').innerHTML='<div class="card wr">Google returned no suggestions. Check your internet connection, or try shorter, more common seed keywords.</div>';return}
+ go(2);const L=[...M.values()].map(e=>({...e,key:kKey(e.s),cls:kCls(e.s,MKP[isAr(e.s)?'ar':'en'])})).sort((a,b)=>b.hits-a.hits||a.s.length-b.s.length),G=[];
+ for(const e of L){let g=G.find(g=>g.cls==e.cls&&kJac(g.key,e.key)>=.8);if(!g){g={key:e.key,cls:e.cls,m:[],seeds:new Set(),comp:new Set()};G.push(g)}g.m.push(e);e.seeds.forEach(s=>g.seeds.add(s));(e.comp||[]).forEach(x=>g.comp.add(x))}
+ ok(2,G.length+' topic groups');go(3);
+ const rows=G.map(g=>{const main=g.m[0].s,lang=isAr(main)?'AR':'EN',P=MKP[lang=='AR'?'ar':'en'],intent=P.buy.test(main)?'trans':P.cmp.test(main)?'comm':detect(main),demand=g.m.reduce((a,e)=>a+e.hits,0)+g.m.length+(g.seeds.size-1)*2+g.comp.size*2;
+  const cv=g.m.map(e=>dup({kw:e.s,topic:e.s})).find(Boolean)||(c.i.find(y=>g.m.some(e=>nsim(e.s,y.kw||'')>=.6))||null);
+  return{main,sec:g.m.slice(1,12).map(e=>e.s),lang,intent,fmt:mkFmt(main,P),demand,comp:[...g.comp],cov:cv?(cv.t||cv.topic||cv.kw):'',seed:[...g.seeds][0]}}).sort((a,b)=>b.demand-a.demand);
+ const newR=rows.filter(r=>!r.cov);ok(3,newR.length+' new · '+(rows.length-newR.length)+' already covered');
+ go(4);let done=0;for(const r of newR.slice(0,NC)){const s=await gSerp(r.main,r.lang=='AR'?'ar':'en',gl);done++;go(4,done+'/'+Math.min(NC,newR.length)+' · '+r.main);if(!s)continue;r.serp={results:s.results.slice(0,10),qs:s.qs,rel:s.rel,src:s.src};const d=kDiff(s,own,comps);Object.assign(r,{lvl:d.lvl,notes:d.notes,fmt:({guide:'how-to guide',list:'listicle','price page':'listicle',directory:'listicle','forum / Q&A':'FAQ','medical info':'how-to guide','video / social':r.fmt})[d.type]||r.fmt,own:d.own})}
+ ok(4,done?done+' topics checked on Google':'skipped');
+ go(5);const mx=Math.max(1,...rows.map(r=>r.demand));rows.forEach(r=>{r.dots=Math.max(1,Math.min(5,Math.ceil(r.demand/mx*5)));r.score=r.demand*({easy:1.5,medium:1,hard:.6}[r.lvl]||1)*(r.own>=0?0.7:1)});rows.sort((a,b)=>(!!a.cov-!!b.cov)||b.score-a.score);
+ KR={at:new Date().toISOString(),seeds:seedsIn,gl,lang:isAr(seedsIn[0])?'AR':'EN',rows:rows.slice(0,200),calls};ok(5,'done');
+ try{await rsSave('__kw__',KR)}catch(e){}krShow()}
+function krShow(){const o=$('#kro');if(!KR){o.innerHTML='';return}const f=$('#krf')?$('#krf').value:'new',R=KR.rows.map((r,i)=>({...r,i})).filter(r=>f=='all'||(f=='new'?!r.cov:f=='easy'?!r.cov&&r.lvl=='easy':!!r.cov));const nNew=KR.rows.filter(r=>!r.cov).length;
+ const lv=r=>r.lvl?`<span class="tag" style="${r.lvl=='hard'?'color:var(--wr)':r.lvl=='easy'?'color:var(--ac)':''}">${{easy:'Easy',medium:'Medium',hard:'Hard'}[r.lvl]}</span>`:'<span class="mu">not checked</span>';
+ o.innerHTML=`<div class="card"><div class="row"><b>Results</b><span class="mu">${new Date(KR.at).toLocaleString()} · seeds: ${KR.seeds.map(esc).join(', ')} · ${KR.calls} Google searches</span><span style="flex:1"></span><select id="krf"><option value="new">New topics (${nNew})</option><option value="easy">New and easy</option><option value="covered">Already covered (${KR.rows.length-nNew})</option><option value="all">All (${KR.rows.length})</option></select></div>
+ <div class="sc" style="margin-top:8px"><table id="krt"><tr><th></th><th>Main keyword</th><th>Secondary keywords</th><th>Intent</th><th>Format</th><th title="Demand signal from Google suggestions">Demand</th><th>Difficulty</th><th>Status</th></tr>
+ ${R.map(r=>`<tr><td><input type="checkbox" data-kr="${r.i}" ${!r.cov&&r.i<10?'checked':''}></td><td dir="auto"><details><summary><b>${esc(r.main)}</b></summary><div class="mu" style="max-width:420px;white-space:normal">${(r.notes||[]).map(n=>'• '+esc(n)).join('<br>')}${r.serp?'<br><b>Top Google results:</b><br>'+r.serp.results.slice(0,5).map((x,j)=>`${j+1}. ${esc(x.title)} <span class="tag">${esc(x.dom)}</span>`).join('<br>'):''}${r.serp&&r.serp.qs.length?'<br><b>People also ask:</b><br>'+r.serp.qs.map(esc).join('<br>'):''}${r.serp&&r.serp.rel.length?'<br><b>Related searches:</b><br>'+r.serp.rel.map(esc).join(' · '):''}${r.comp.length?'<br>Competitors write about it: '+r.comp.map(esc).join(', '):''}</div></details></td>
+ <td dir="auto" class="mu" style="white-space:normal;max-width:320px">${r.sec.slice(0,5).map(esc).join(' · ')}${r.sec.length>5?' <span class="tag">+'+(r.sec.length-5)+'</span>':''}</td><td>${INT[r.intent]}</td><td>${esc(r.fmt)}</td><td>${'●'.repeat(r.dots)}<span class="mu">${'○'.repeat(5-r.dots)}</span></td><td>${lv(r)}</td><td dir="auto" class="${r.cov?'mu':''}">${r.cov?'covered: '+esc(r.cov):'<b>new</b>'}</td></tr>`).join('')||'<tr><td colspan="8" class="mu">Nothing to show for this filter.</td></tr>'}</table></div>
+ <div class="row" style="margin-top:8px"><button id="kra">Add ticked to Idea bank</button>Month <input type="month" id="krpm" value="${esc($('#mo').value||new Date().toISOString().slice(0,7))}"> <button class="p" id="krb">Create plan from ticked</button></div>
+ <p class="mu">Demand is a signal from how often Google suggests the phrases in a group, not monthly volume. Difficulty is estimated from who ranks on Google’s first page.</p></div>`;
+ $('#krf').value=f;$('#krf').onchange=krShow;$('#kra').onclick=()=>krUse(false);$('#krb').onclick=()=>krUse(true)}
+function krIdea(r){const ar=r.lang=='AR',x=mk(ar?r.main:cap1(r.main),r.main,r.intent,r.fmt,r.seed||r.main,r.lang,0,0,'','idea','Keyword research');x.sec=r.sec.slice(0,8).join(', ');
+ x.ob={headings:[],faqs:((r.serp&&r.serp.qs)||[]).map(q=>({q,a:''})),notes:(r.notes||[]).concat(r.sec.length?[(ar?'كلمات ثانوية: ':'Secondary keywords: ')+r.sec.slice(0,8).join('، ')]:[]),links:[],picked:true};return x}
+function krUse(asPlan){const c=cur(),T=[...document.querySelectorAll('#krt [data-kr]:checked')].map(e=>KR.rows[+e.dataset.kr]);if(!T.length)return alert('Tick at least one keyword.');
+ const fresh=T.filter(r=>!c.i.some(y=>arN(y.kw)==arN(r.main)));const X=fresh.map(krIdea);X.forEach(x=>{x.status=asPlan?'planned':'idea';c.i.push(x)});save();tbl();
+ if(!asPlan)return alert(X.length+' ideas added to the Idea bank'+(T.length-X.length?' ('+(T.length-X.length)+' were already there)':''));
+ const mo=$('#krpm').value||new Date().toISOString().slice(0,7);const all=T.map(r=>c.i.find(y=>arN(y.kw)==arN(r.main))).filter(Boolean);let rest=all.slice(),ord=[];while(rest.length){const pv=ord[ord.length-1];const i=rest.findIndex(x=>!pv||x.format!=pv.format);ord.push(...rest.splice(i<0?0:i,1))}
+ plan=ord.map((x,i)=>{const r=T.find(r=>arN(r.main)==arN(x.kw))||{};return{...x,wk:Math.floor(i*4/ord.length)+1,why:'Keyword research · demand '+'●'.repeat(r.dots||1)+(r.lvl?' · '+r.lvl:'')+' · new topic'}});
+ $('#mo').value=mo;$('#n').value=plan.length;flags=[];curPlanId=null;save();planSave(true);show();setSv(plan.length+' posts planned and saved to Plan history');document.querySelector('[data-t=b]').click()}
+async function krLoad(){const c=cur();if($('#krs').dataset.cl!=S.cur){$('#krs').value=krSeeds(c).join('\n');$('#krs').dataset.cl=S.cur;KR=null;const p=c.p||{},m=(p.m||'').toLowerCase();$('#krm').value=/saudi|ksa|السعودية/.test(m)?'sa':/uae|emirates|dubai|الامارات|الإمارات/.test(m)?'ae':/usa|united states|america/.test(m)?'us':/uk|britain|england/.test(m)?'gb':'eg';
+  try{const s=await rsLoadSaved('__kw__');if(s&&s.rows){KR=s;$('#krp').innerHTML=`<div class="mu">Showing the last research from ${new Date(s.at).toLocaleString()}. Click Find keywords to run it again.</div>`}else $('#krp').innerHTML=''}catch(e){}}krShow()}
+$('#krgo').onclick=async()=>{const b=$('#krgo');b.disabled=true;try{await krRun()}catch(e){$('#krp').innerHTML='<div class="card wr">Something went wrong: '+esc(e.message||e)+'</div>'}finally{b.disabled=false}};
+if(CLOUD)boot();else{Object.values(S.c).forEach(c=>c.plans&&rebuildHist(c));prof();renderAll();showView('w')}
+applyLang();
+</script></main></body></html>
